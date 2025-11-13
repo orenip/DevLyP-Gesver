@@ -1,35 +1,34 @@
-
-generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
-}
-
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
 }
 
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
 model Despliegue {
-  id            Int      @id @default(autoincrement())
-  fecha         DateTime
-  entorno       String
-  version       String
-  accion        String?
-  comentario    String?
-  programaId    Int
-  responsableId Int
-  programa      Programa    @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  responsable   Responsable @relation(fields: [responsableId], references: [id], onDelete: Cascade)
+  id              Int          @id @default(autoincrement())
+  fecha           DateTime
+  entorno         String
+  version         String
+  accion          String?
+  comentario      String?
+  programa        Programa     @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  programaId      Int
+  responsable     Responsable  @relation(fields: [responsableId], references: [id], onDelete: Cascade)
+  responsableId   Int
 }
 
 model Programa {
-  id         Int          @id @default(autoincrement())
-  nombre     String       @unique
+  id          Int          @id @default(autoincrecrement())
+  nombre      String       @unique
   despliegues Despliegue[]
 }
 
 model Responsable {
-  id         Int          @id @default(autoincrement())
-  nombre     String       @unique
+  id          Int          @id @default(autoincrement())
+  nombre      String       @unique
   despliegues Despliegue[]
 }

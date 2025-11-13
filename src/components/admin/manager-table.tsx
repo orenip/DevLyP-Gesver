@@ -62,11 +62,10 @@ function SubmitButton({ isEditing }: { isEditing: boolean }) {
 
 function EditDialog({ item, action, children, singularTitle }: { item?: Item; action: any; children: React.ReactNode; singularTitle: string; }) {
   const [open, setOpen] = React.useState(false);
-  const [formAction, setFormAction] = React.useState(() => action);
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
 
-  const [state, dispatch] = useFormState(formAction, undefined);
+  const [state, dispatch] = useFormState(action, undefined);
   
   React.useEffect(() => {
     if(state?.message) {
@@ -151,7 +150,7 @@ export function ManagerTable({ title, items, createOrUpdateAction, deleteAction 
                         </EditDialog>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <div><Button variant="outline" size="sm" >Eliminar</Button></div>
+                            <Button variant="outline" size="sm" >Eliminar</Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
