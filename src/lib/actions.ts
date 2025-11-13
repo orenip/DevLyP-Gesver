@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import prisma from './prisma';
 import { revalidatePath } from 'next/cache';
-import { deploymentSchema, Entorno, adminSchema } from './definitions';
+import { deploymentSchema, adminSchema } from './definitions';
 import { Prisma } from '@prisma/client';
 
 export async function createOrUpdateDeployment(
@@ -43,11 +43,13 @@ export async function createOrUpdateDeployment(
       create: { nombre: data.responsable },
     });
 
-    const deploymentData = {
+    const deploymentData: any = {
       ...data,
       programaId: programa.id,
       responsableId: responsable.id,
     };
+    delete deploymentData.programa;
+    delete deploymentData.responsable;
 
     if (id) {
       await prisma.despliegue.update({
@@ -108,7 +110,7 @@ export async function createOrUpdateProgram(prevState: any, formData: FormData) 
         return { message: `Programa ${id ? 'actualizado' : 'creado'}.` };
     } catch (e: unknown) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-            return { message: 'Error: El nombre del programa ya existe.' };
+            return { errors: { nombre: ['El nombre del programa ya existe.'] }, message: 'Error: El nombre del programa ya existe.' };
         }
         return { message: 'Error en la base de datos.' };
     }
@@ -151,7 +153,7 @@ export async function createOrUpdateResponsible(prevState: any, formData: FormDa
         return { message: `Responsable ${id ? 'actualizado' : 'creado'}.` };
     } catch (e: unknown) {
          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-            return { message: 'Error: El nombre del responsable ya existe.' };
+            return { errors: { nombre: ['El nombre del responsable ya existe.'] }, message: 'Error: El nombre del responsable ya existe.' };
         }
         return { message: 'Error en la base de datos.' };
     }

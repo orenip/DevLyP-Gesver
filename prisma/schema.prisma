@@ -4,23 +4,21 @@ datasource db {
 }
 
 generator client {
-  provider        = "prisma-client-js"
-  binaryTargets   = ["native", "linux-musl"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 model Despliegue {
   id            Int      @id @default(autoincrement())
-  fecha         DateTime
+  fecha         DateTime @default(now())
   entorno       String
   version       String
   accion        String?
   comentario    String?
+  programa      Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
   programaId    Int
-  responsableId Int
-  programa      Programa    @relation(fields: [programaId], references: [id], onDelete: Cascade)
   responsable   Responsable @relation(fields: [responsableId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  responsableId Int
 }
 
 model Programa {
