@@ -62,9 +62,11 @@ function SubmitButton({ isEditing }: { isEditing: boolean }) {
 
 function EditDialog({ item, action, children, singularTitle }: { item?: Item; action: any; children: React.ReactNode; singularTitle: string; }) {
   const [open, setOpen] = React.useState(false);
-  const [state, formAction] = useFormState(action, undefined);
+  const [formAction, setFormAction] = React.useState(() => action);
   const { toast } = useToast();
   const formRef = React.useRef<HTMLFormElement>(null);
+
+  const [state, dispatch] = useFormState(formAction, undefined);
   
   React.useEffect(() => {
     if(state?.message) {
@@ -88,7 +90,7 @@ function EditDialog({ item, action, children, singularTitle }: { item?: Item; ac
             {item ? 'Modifique el nombre.' : `Añada un nuevo ${singularTitle.toLowerCase()}.`}
           </DialogDescription>
         </DialogHeader>
-        <form ref={formRef} action={formAction} className="space-y-4">
+        <form ref={formRef} action={dispatch} className="space-y-4">
           <input type="hidden" name="id" defaultValue={item?.id} />
           <div>
             <Label htmlFor="nombre">Nombre</Label>
@@ -145,11 +147,11 @@ export function ManagerTable({ title, items, createOrUpdateAction, deleteAction 
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
                         <EditDialog item={item} action={createOrUpdateAction} singularTitle={singularTitle}>
-                            <Button variant="outline" size="sm">Editar</Button>
+                           <Button variant="outline" size="sm">Editar</Button>
                         </EditDialog>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" >Eliminar</Button>
+                            <div><Button variant="outline" size="sm" >Eliminar</Button></div>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>

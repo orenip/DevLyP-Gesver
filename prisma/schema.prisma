@@ -1,8 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -11,32 +10,26 @@ datasource db {
 }
 
 model Despliegue {
-  id              Int          @id @default(autoincrement())
-  fecha           DateTime
-  programaId      Int
-  programa        Programa     @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  entorno         String
-  version         String
-  accion          String?
-  responsableId   Int
-  responsable     Responsable  @relation(fields: [responsableId], references: [id], onDelete: Cascade)
-  comentario      String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id            Int      @id @default(autoincrement())
+  fecha         DateTime
+  entorno       String
+  version       String
+  accion        String?
+  comentario    String?
+  programaId    Int
+  responsableId Int
+  programa      Programa    @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  responsable   Responsable @relation(fields: [responsableId], references: [id], onDelete: Cascade)
 }
 
 model Programa {
-  id          Int          @id @default(autoincrement())
-  nombre      String       @unique
+  id         Int          @id @default(autoincrement())
+  nombre     String       @unique
   despliegues Despliegue[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
 }
 
 model Responsable {
-  id          Int          @id @default(autoincrement())
-  nombre      String       @unique
+  id         Int          @id @default(autoincrement())
+  nombre     String       @unique
   despliegues Despliegue[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
 }
