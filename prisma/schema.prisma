@@ -1,24 +1,24 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-1.1.x"]
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 model Despliegue {
-  id            Int      @id @default(autoincrement())
-  fecha         DateTime @default(now())
+  id            Int         @id @default(autoincrement())
+  fecha         DateTime
+  programa      Programa    @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  programaId    Int
   entorno       String
   version       String
   accion        String?
-  comentario    String?
-  programa      Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  programaId    Int
   responsable   Responsable @relation(fields: [responsableId], references: [id], onDelete: Cascade)
   responsableId Int
+  comentario    String?
 }
 
 model Programa {
