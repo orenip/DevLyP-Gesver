@@ -121,16 +121,18 @@ export function DeploymentSheet({ deployment, programs, responsibles }: { deploy
   }, [open, deployment, form]);
 
 
+  const triggerButton = isEditing ? (
+    <Button variant="outline" size="sm">Editar</Button>
+  ) : (
+    <Button>
+      <Plus className="mr-2 h-4 w-4" /> Nuevo Despliegue
+    </Button>
+  );
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {isEditing ? (
-          <Button variant="outline" size="sm">Editar</Button>
-        ) : (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Despliegue
-          </Button>
-        )}
+      <SheetTrigger>
+        {triggerButton}
       </SheetTrigger>
       <SheetContent className="sm:max-w-lg overflow-y-auto">
         <SheetHeader>

@@ -81,7 +81,9 @@ function EditDialog({ item, action, children, singularTitle }: { item?: Item; ac
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger>
+        {children}
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{item ? 'Editar' : 'Crear'} {singularTitle}</DialogTitle>
@@ -126,7 +128,7 @@ export function ManagerTable({ title, items, createOrUpdateAction, deleteAction 
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{title}</CardTitle>
         <EditDialog action={createOrUpdateAction} singularTitle={singularTitle}>
-            <Button size="sm"><Plus className="mr-2 h-4 w-4"/>Añadir</Button>
+          <Button size="sm"><Plus className="mr-2 h-4 w-4"/>Añadir</Button>
         </EditDialog>
       </CardHeader>
       <CardContent>
@@ -149,7 +151,7 @@ export function ManagerTable({ title, items, createOrUpdateAction, deleteAction 
                            <Button variant="outline" size="sm">Editar</Button>
                         </EditDialog>
                         <AlertDialog>
-                          <AlertDialogTrigger asChild>
+                          <AlertDialogTrigger>
                             <Button variant="outline" size="sm" >Eliminar</Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>

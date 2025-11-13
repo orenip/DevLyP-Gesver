@@ -45,7 +45,7 @@ function RowActions({ row, programs, responsibles }: { row: { original: Desplieg
     <div className="flex gap-2 justify-end">
       <DeploymentSheet deployment={deployment} programs={programs} responsibles={responsibles} />
       <AlertDialog>
-        <AlertDialogTrigger asChild>
+        <AlertDialogTrigger>
           <Button variant="outline" size="sm">Eliminar</Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
