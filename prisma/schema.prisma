@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Despliegue {
+  id              Int          @id @default(autoincrement())
+  fecha           DateTime
+  programaId      Int
+  programa        Programa     @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  entorno         String
+  version         String
+  accion          String?
+  responsableId   Int
+  responsable     Responsable  @relation(fields: [responsableId], references: [id], onDelete: Cascade)
+  comentario      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Programa {
+  id          Int          @id @default(autoincrement())
+  nombre      String       @unique
+  despliegues Despliegue[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Responsable {
+  id          Int          @id @default(autoincrement())
+  nombre      String       @unique
+  despliegues Despliegue[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
