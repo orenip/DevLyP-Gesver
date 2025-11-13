@@ -1,28 +1,8 @@
-import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
-import { DeploymentsTable } from '@/components/deployments/deployments-table';
-import type { SearchParams } from '@/lib/definitions';
-
-export default async function DeploymentsPage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
-  const query = searchParams?.query || '';
-  const entorno = searchParams?.entorno || '';
-  const programaId = searchParams?.programaId || '';
-  const responsableId = searchParams?.responsableId || '';
-
-  const [deployments, programs, responsibles] = await Promise.all([
-    fetchFilteredDeployments(query, entorno, programaId, responsableId),
-    fetchPrograms(),
-    fetchResponsibles(),
-  ]);
-
+export default function Home() {
   return (
-    <DeploymentsTable
-      deployments={deployments}
-      programs={programs}
-      responsibles={responsibles}
-    />
+    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <h1 className="text-4xl font-bold">Hello, World!</h1>
+      <p className="mt-4 text-lg">Your new Firebase Studio project is ready.</p>
+    </main>
   );
 }
