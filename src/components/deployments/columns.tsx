@@ -21,7 +21,7 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
   {
     accessorKey: 'fecha',
     header: 'Fecha',
-    cell: ({ row }) => new Date(row.getValue('fecha')).toLocaleDateString(),
+    cell: ({ row }) => new Date(row.getValue('fecha')).toLocaleDateString('es-ES'),
   },
   {
     accessorKey: 'programa.nombre',
