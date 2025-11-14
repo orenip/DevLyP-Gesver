@@ -34,9 +34,9 @@ export function SummaryView({ summary }: SummaryViewProps) {
   const DeploymentInfo = ({ deployment, environment }: { deployment: DeploymentWithRelations | null, environment: 'Preproducción' | 'Producción' }) => {
     if (!deployment) {
       return (
-        <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full text-sm text-muted-foreground">
-          <Server className="w-5 h-5 mb-2" />
-          <span>Sin datos</span>
+        <div className="p-4 bg-muted/50 rounded-lg space-y-3 flex flex-col justify-center items-center h-full text-sm text-muted-foreground">
+            <Server className="w-5 h-5 mb-2" />
+            <span>Sin datos</span>
         </div>
       );
     }

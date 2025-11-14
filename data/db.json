@@ -35,12 +35,58 @@
       "url": "Http:API.com",
       "port": "8012",
       "hasSwagger": false
+    },
+    {
+      "id": "a24b3a06-def1-4c08-b0b0-c112f4ba9cbb",
+      "entorno": "Producción",
+      "plataforma": "Docker",
+      "version": "3.5rc-1",
+      "accion": "Actualizar ",
+      "comentario": "",
+      "url": "",
+      "port": "",
+      "fecha": "2025-11-14T14:40:41.770Z",
+      "programaId": "31795ad8-e381-4742-ac0e-5889f7da039c",
+      "responsableId": "2b71ee0f-e7ca-4058-9b55-77815dbece13",
+      "hasSwagger": true
+    },
+    {
+      "id": "247b2f4f-9cfb-4d86-b8df-a2564a2264e4",
+      "entorno": "Preproducción",
+      "plataforma": "IIS",
+      "version": "3",
+      "accion": "Jdhs",
+      "comentario": "",
+      "url": "",
+      "port": "",
+      "fecha": "2025-11-14T14:43:18.498Z",
+      "programaId": "31795ad8-e381-4742-ac0e-5889f7da039c",
+      "responsableId": "2b71ee0f-e7ca-4058-9b55-77815dbece13",
+      "hasSwagger": false
+    },
+    {
+      "id": "e3422e9b-cdba-47cb-b34e-0dee473c06d5",
+      "entorno": "Preproducción",
+      "plataforma": "IIS",
+      "version": "Bdd",
+      "accion": "Jdjs",
+      "comentario": "",
+      "url": "",
+      "port": "",
+      "fecha": "2025-11-14T14:44:35.138Z",
+      "programaId": "6b321b41-66d6-4f1f-8e99-052d4650d972",
+      "responsableId": "2b71ee0f-e7ca-4058-9b55-77815dbece13",
+      "hasSwagger": true
     }
   ],
   "programas": [
     {
       "id": "31795ad8-e381-4742-ac0e-5889f7da039c",
       "nombre": "Prueba"
+    },
+    {
+      "id": "6b321b41-66d6-4f1f-8e99-052d4650d972",
+      "nombre": "Prueba2"
     }
   ],
   "responsables": [
