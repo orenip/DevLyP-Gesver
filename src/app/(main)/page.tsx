@@ -1,5 +1,5 @@
 import { SummaryView } from '@/components/deployments/summary-view';
-import { SummarySkeleton } from '@/components/skeletons';
+import { LoadingSpinner } from '@/components/loading-spinner';
 import { fetchSummary } from '@/lib/data';
 import { Suspense } from 'react';
 
@@ -8,7 +8,7 @@ export default async function Home() {
   return (
     <div>
         <h1 className="text-2xl font-bold tracking-tight mb-4">Resumen de Versiones</h1>
-        <Suspense fallback={<SummarySkeleton/>}>
+        <Suspense fallback={<LoadingSpinner />}>
             <SummaryData />
         </Suspense>
     </div>

@@ -10,11 +10,11 @@ import { columns } from '@/components/deployments/columns';
 import { Button } from '../ui/button';
 import { FileDown, PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
-import { DeploymentWithRelations, fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
 import { Suspense } from 'react';
-import { TableSkeleton } from '../skeletons';
 import Link from 'next/link';
 import { ExportButton } from './export-button';
+import { LoadingSpinner } from '../loading-spinner';
 
 interface DeploymentsTableProps {
   query: string;
@@ -58,7 +58,7 @@ export function DeploymentsTable({ query, entorno, programaId, responsableId }: 
         </Suspense>
       </CardHeader>
       <CardContent>
-        <Suspense fallback={<TableSkeleton />}>
+        <Suspense fallback={<LoadingSpinner />}>
           <DeploymentsData
             query={query}
             entorno={entorno}

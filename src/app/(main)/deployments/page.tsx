@@ -1,4 +1,6 @@
 import { DeploymentsTable } from '@/components/deployments/deployments-table';
+import { LoadingSpinner } from '@/components/loading-spinner';
+import { Suspense } from 'react';
 
 export default async function DeploymentsPage({
   searchParams,
@@ -16,11 +18,13 @@ export default async function DeploymentsPage({
   const responsableId = searchParams?.responsableId;
   
   return (
-    <DeploymentsTable
-      query={query}
-      entorno={entorno}
-      programaId={programaId}
-      responsableId={responsableId}
-    />
+    <Suspense fallback={<LoadingSpinner />}>
+      <DeploymentsTable
+        query={query}
+        entorno={entorno}
+        programaId={programaId}
+        responsableId={responsableId}
+      />
+    </Suspense>
   );
 }
