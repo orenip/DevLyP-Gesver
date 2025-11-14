@@ -24,7 +24,7 @@ export function DeploymentsTable({ deployments, programs, responsibles }: Deploy
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <CardTitle>Despliegues</CardTitle>
             <CardDescription>
@@ -32,7 +32,7 @@ export function DeploymentsTable({ deployments, programs, responsibles }: Deploy
             </CardDescription>
           </div>
           <DeploymentSheet>
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1 w-full sm:w-auto">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Añadir Despliegue

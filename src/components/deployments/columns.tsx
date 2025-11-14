@@ -14,6 +14,7 @@ import {
 import { DeploymentSheet } from './deployment-sheet';
 import { DeleteDialog } from './delete-dialog';
 import { DeploymentWithRelations } from '@/lib/data';
+import { Badge } from '../ui/badge';
 
 
 export const columns: ColumnDef<DeploymentWithRelations>[] = [
@@ -35,16 +36,25 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
     header: 'Versión',
   },
   {
+    accessorKey: 'plataforma',
+    header: 'Plataforma',
+    cell: ({ row }) => {
+      const plataforma = row.getValue('plataforma') as string;
+      if (!plataforma) return '-';
+      return <Badge variant="secondary">{plataforma}</Badge>
+    }
+  },
+  {
     accessorKey: 'responsable.nombre',
     header: 'Responsable',
   },
   {
-    accessorKey: 'accion',
-    header: 'Acción',
-  },
-  {
     accessorKey: 'comentario',
     header: 'Comentario',
+    cell: ({ row }) => {
+        const comentario = row.getValue('comentario') as string;
+        return <div className="truncate max-w-xs">{comentario || '-'}</div>
+    }
   },
   {
     id: 'actions',

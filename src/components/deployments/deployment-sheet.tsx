@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { ComboboxInput } from '../ui/combobox';
 import { useToast } from '@/hooks/use-toast';
 import { DeploymentWithRelations, Programa, Responsable, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 
 interface DeploymentSheetProps {
@@ -110,6 +111,21 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="plataforma" className="text-right">
+                    Plataforma
+                </Label>
+                <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="col-span-3 flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="IIS" id="r1" />
+                        <Label htmlFor="r1">IIS</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Docker" id="r2" />
+                        <Label htmlFor="r2">Docker</Label>
+                    </div>
+                </RadioGroup>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="version" className="text-right">
                 Versión
               </Label>
@@ -135,9 +151,7 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
             </div>
           </div>
           <SheetFooter>
-            <SheetClose asChild>
-                <SubmitButton />
-            </SheetClose>
+            <SubmitButton />
           </SheetFooter>
         </form>
       </SheetContent>

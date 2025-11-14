@@ -39,7 +39,7 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
   };
 
   return (
-    <div className="flex items-center gap-4 mt-4">
+    <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
         <Input
           type="search"
           placeholder="Buscar despliegues..."
@@ -47,34 +47,36 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
           onChange={(e) => handleSearch(e.target.value)}
           defaultValue={searchParams.get('query')?.toString()}
         />
-        <Select onValueChange={handleFilterChange('entorno')} defaultValue={searchParams.get('entorno') || 'all'}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Entorno" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">Todos los Entornos</SelectItem>
-                <SelectItem value="Preproducción">Preproducción</SelectItem>
-                <SelectItem value="Producción">Producción</SelectItem>
-            </SelectContent>
-        </Select>
-        <Select onValueChange={handleFilterChange('programaId')} defaultValue={searchParams.get('programaId') || 'all'}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Programa" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">Todos los Programas</SelectItem>
-                {programs.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.nombre}</SelectItem>)}
-            </SelectContent>
-        </Select>
-        <Select onValueChange={handleFilterChange('responsableId')} defaultValue={searchParams.get('responsableId') || 'all'}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Responsable" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">Todos los Responsables</SelectItem>
-                {responsibles.map(r => <SelectItem key={r.id} value={r.id.toString()}>{r.nombre}</SelectItem>)}
-            </SelectContent>
-        </Select>
+        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-4">
+            <Select onValueChange={handleFilterChange('entorno')} defaultValue={searchParams.get('entorno') || 'all'}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Entorno" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos los Entornos</SelectItem>
+                    <SelectItem value="Preproducción">Preproducción</SelectItem>
+                    <SelectItem value="Producción">Producción</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select onValueChange={handleFilterChange('programaId')} defaultValue={searchParams.get('programaId') || 'all'}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Programa" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos los Programas</SelectItem>
+                    {programs.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.nombre}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select onValueChange={handleFilterChange('responsableId')} defaultValue={searchParams.get('responsableId') || 'all'}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Responsable" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos los Responsables</SelectItem>
+                    {responsibles.map(r => <SelectItem key={r.id} value={r.id.toString()}>{r.nombre}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
     </div>
   );
 }

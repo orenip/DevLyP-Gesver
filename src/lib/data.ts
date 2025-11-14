@@ -27,6 +27,7 @@ export interface Despliegue {
   fecha: Date | Timestamp;
   programaId: string;
   entorno: 'Preproducción' | 'Producción';
+  plataforma: 'IIS' | 'Docker';
   version: string;
   accion?: string;
   responsableId: string;
