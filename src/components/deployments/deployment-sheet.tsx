@@ -22,7 +22,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import { saveDeployment, updateDeployment } from '@/lib/actions';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -49,6 +49,7 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
   const { toast } = useToast();
   const [programs, setPrograms] = useState<Programa[]>([]);
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -64,7 +65,10 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
     }
   }, [open]);
 
-  const action = async (formData: FormData) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
     const result = deployment
       ? await updateDeployment(deployment.id, formData)
       : await saveDeployment(formData);
@@ -91,27 +95,27 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
             {deployment ? 'Edita los detalles del despliegue.' : 'Añade un nuevo despliegue a la lista.'}
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="flex-grow pr-6">
-            <form id="deployment-form" action={action} className="grid gap-4 py-4">
+        <ScrollArea className="flex-grow pr-6 -mr-6">
+            <form id="deployment-form" ref={formRef} onSubmit={handleSubmit} className="grid gap-4 py-4">
                 <div className="space-y-2">
-                <Label htmlFor="fecha">Fecha</Label>
-                <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
+                    <Label htmlFor="fecha">Fecha</Label>
+                    <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="programa">Programa</Label>
-                <CreatableCombobox name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona o crea un programa..." />
+                    <Label htmlFor="programa">Programa</Label>
+                    <CreatableCombobox name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona o crea un programa..." />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="entorno">Entorno</Label>
-                <Select name="entorno" defaultValue={deployment?.entorno}>
-                    <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un entorno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="Preproducción">Preproducción</SelectItem>
-                    <SelectItem value="Producción">Producción</SelectItem>
-                    </SelectContent>
-                </Select>
+                    <Label htmlFor="entorno">Entorno</Label>
+                    <Select name="entorno" defaultValue={deployment?.entorno || 'Preproducción'}>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un entorno" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="Preproducción">Preproducción</SelectItem>
+                        <SelectItem value="Producción">Producción</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="plataforma">Plataforma</Label>
@@ -127,20 +131,20 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
                     </RadioGroup>
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="version">Versión</Label>
-                <Input id="version" name="version" defaultValue={deployment?.version} />
+                    <Label htmlFor="version">Versión</Label>
+                    <Input id="version" name="version" defaultValue={deployment?.version} required />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="accion">Acción</Label>
-                <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
+                    <Label htmlFor="accion">Acción</Label>
+                    <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="responsable">Responsable</Label>
-                <CreatableCombobox name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona o crea responsable..." />
+                    <Label htmlFor="responsable">Responsable</Label>
+                    <CreatableCombobox name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona o crea responsable..." />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="comentario">Comentario</Label>
-                <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
+                    <Label htmlFor="comentario">Comentario</Label>
+                    <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
                 </div>
             </form>
         </ScrollArea>
@@ -165,28 +169,30 @@ function DatePicker({ defaultValue }: { defaultValue?: Date }) {
     const [date, setDate] = useState<Date | undefined>(defaultValue || new Date())
    
     return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP") : <span>Pick a date</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            initialFocus
-          />
-        </PopoverContent>
+      <>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
         <input type="hidden" name="fecha" value={date?.toISOString()} />
-      </Popover>
+      </>
     )
   }
