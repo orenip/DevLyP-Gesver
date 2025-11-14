@@ -58,9 +58,11 @@ export function SummaryView({ summary }: SummaryViewProps) {
             </div>
           </>
         ) : (
-          <div className="flex flex-col justify-center items-center h-full text-sm text-muted-foreground flex-grow">
-              <Server className="w-5 h-5 mb-2" />
-              <span>Sin datos</span>
+          <div className="flex flex-col justify-end items-center h-full text-sm text-muted-foreground flex-grow">
+              <div className="flex flex-col items-center gap-2">
+                <Server className="w-5 h-5" />
+                <span>Sin datos</span>
+              </div>
           </div>
         )}
       </div>
