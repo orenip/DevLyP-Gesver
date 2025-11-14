@@ -11,12 +11,25 @@ import {
     SelectValue,
   } from '@/components/ui/select';
 import { Programa, Responsable } from '@/lib/data';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { Button } from '../ui/button';
+import { Filter } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 
 export function Filters({ programs, responsibles }: { programs: Programa[], responsibles: Responsable[]}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+
+  const areFiltersActive = useMemo(() => {
+    return searchParams.has('entorno') || searchParams.has('programaId') || searchParams.has('responsableId');
+  }, [searchParams]);
 
   const handleSearch = useDebouncedCallback((term: string) => {
     const params = new URLSearchParams(searchParams);
@@ -42,14 +55,23 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
 
   return (
     <div className="flex flex-col gap-4 pt-4">
-      <Input
-        type="search"
-        placeholder="Buscar despliegues..."
-        className="w-full"
-        onChange={(e) => handleSearch(e.target.value)}
-        defaultValue={searchParams.get('query')?.toString()}
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Collapsible>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Input
+            type="search"
+            placeholder="Buscar despliegues..."
+            className="w-full"
+            onChange={(e) => handleSearch(e.target.value)}
+            defaultValue={searchParams.get('query')?.toString()}
+          />
+          <CollapsibleTrigger asChild>
+            <Button variant={areFiltersActive ? "default" : "outline"} className="gap-2 w-full sm:w-auto flex-shrink-0">
+              <Filter className="h-4 w-4" />
+              <span>Filtros</span>
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 animate-in fade-in-0 zoom-in-95">
           <Select onValueChange={handleFilterChange('entorno')} defaultValue={searchParams.get('entorno') || 'all'}>
               <SelectTrigger>
                   <SelectValue placeholder="Entorno" />
@@ -78,7 +100,8 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
                   {responsibles.map(r => <SelectItem key={r.id} value={r.id}>{r.nombre}</SelectItem>)}
               </SelectContent>
           </Select>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
