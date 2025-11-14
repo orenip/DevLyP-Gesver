@@ -32,10 +32,11 @@ import {
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ComboboxInput } from '../ui/combobox';
+import { CreatableCombobox } from '../ui/creatable-combobox';
 import { useToast } from '@/hooks/use-toast';
-import { DeploymentWithRelations, Programa, Responsable, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { DeploymentWithRelations, Programa, Responsable } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { ScrollArea } from '../ui/scroll-area';
 
 
 interface DeploymentSheetProps {
@@ -50,9 +51,18 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
 
   useEffect(() => {
-    fetchPrograms().then(setPrograms);
-    fetchResponsibles().then(setResponsibles);
-  }, [])
+    async function fetchData() {
+        const [progRes, respRes] = await Promise.all([
+            fetch('/api/programas'),
+            fetch('/api/responsables'),
+        ]);
+        if (progRes.ok) setPrograms(await progRes.json());
+        if (respRes.ok) setResponsibles(await respRes.json());
+    }
+    if (open) {
+        fetchData();
+    }
+  }, [open]);
 
   const action = async (formData: FormData) => {
     const result = deployment
@@ -74,69 +84,69 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent className="sm:max-w-lg">
+      <SheetContent className="sm:max-w-lg flex flex-col">
         <SheetHeader>
           <SheetTitle>{deployment ? 'Editar' : 'Añadir'} Despliegue</SheetTitle>
           <SheetDescription>
             {deployment ? 'Edita los detalles del despliegue.' : 'Añade un nuevo despliegue a la lista.'}
           </SheetDescription>
         </SheetHeader>
-        <form action={action}>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="fecha">Fecha</Label>
-              <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="programa">Programa</Label>
-              <ComboboxInput name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona programa..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="entorno">Entorno</Label>
-              <Select name="entorno" defaultValue={deployment?.entorno}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un entorno" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preproducción">Preproducción</SelectItem>
-                  <SelectItem value="Producción">Producción</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="plataforma">Plataforma</Label>
-                <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="IIS" id="r1" />
-                        <Label htmlFor="r1">IIS</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Docker" id="r2" />
-                        <Label htmlFor="r2">Docker</Label>
-                    </div>
-                </RadioGroup>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="version">Versión</Label>
-              <Input id="version" name="version" defaultValue={deployment?.version} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="accion">Acción</Label>
-              <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsable">Responsable</Label>
-              <ComboboxInput name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona responsable..." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="comentario">Comentario</Label>
-              <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
-            </div>
-          </div>
-          <SheetFooter>
+        <ScrollArea className="flex-grow pr-6">
+            <form id="deployment-form" action={action} className="grid gap-4 py-4">
+                <div className="space-y-2">
+                <Label htmlFor="fecha">Fecha</Label>
+                <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="programa">Programa</Label>
+                <CreatableCombobox name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona o crea un programa..." />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="entorno">Entorno</Label>
+                <Select name="entorno" defaultValue={deployment?.entorno}>
+                    <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un entorno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="Preproducción">Preproducción</SelectItem>
+                    <SelectItem value="Producción">Producción</SelectItem>
+                    </SelectContent>
+                </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="plataforma">Plataforma</Label>
+                    <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="IIS" id="r1" />
+                            <Label htmlFor="r1">IIS</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Docker" id="r2" />
+                            <Label htmlFor="r2">Docker</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="version">Versión</Label>
+                <Input id="version" name="version" defaultValue={deployment?.version} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="accion">Acción</Label>
+                <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="responsable">Responsable</Label>
+                <CreatableCombobox name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona o crea responsable..." />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="comentario">Comentario</Label>
+                <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
+                </div>
+            </form>
+        </ScrollArea>
+        <SheetFooter>
             <SubmitButton />
-          </SheetFooter>
-        </form>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
@@ -145,7 +155,7 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" form="deployment-form" disabled={pending}>
       {pending ? 'Guardando...' : 'Guardar Cambios'}
     </Button>
   );
