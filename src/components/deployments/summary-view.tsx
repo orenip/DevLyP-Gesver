@@ -34,7 +34,7 @@ export function SummaryView({ summary }: SummaryViewProps) {
   const DeploymentInfo = ({ deployment, environment }: { deployment: DeploymentWithRelations | null, environment: 'Preproducción' | 'Producción' }) => {
     
     return (
-      <div className="p-4 bg-muted/50 rounded-lg space-y-3 flex flex-col h-full">
+      <div className="bg-muted/50 rounded-lg space-y-3 p-4 flex-grow flex flex-col">
         {deployment ? (
           <>
             <div className="flex items-center justify-between">
@@ -46,7 +46,7 @@ export function SummaryView({ summary }: SummaryViewProps) {
                 v{deployment.version}
               </Badge>
             </div>
-            <div className="text-xs text-muted-foreground space-y-2 flex-grow">
+            <div className="text-xs text-muted-foreground space-y-2 flex-grow flex flex-col justify-end">
               <div className="flex items-center gap-2">
                 <User className="w-3.5 h-3.5" />
                 <span>{deployment.responsable.nombre}</span>
@@ -58,7 +58,7 @@ export function SummaryView({ summary }: SummaryViewProps) {
             </div>
           </>
         ) : (
-          <div className="flex flex-col justify-end items-center h-full text-sm text-muted-foreground flex-grow">
+          <div className="flex flex-col justify-center items-center h-full text-sm text-muted-foreground flex-grow">
               <div className="flex flex-col items-center gap-2">
                 <Server className="w-5 h-5" />
                 <span>Sin datos</span>
@@ -79,11 +79,11 @@ export function SummaryView({ summary }: SummaryViewProps) {
                       <CardDescription>Últimas versiones desplegadas</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="flex flex-col">
                         <h4 className="text-sm font-semibold mb-2 text-center text-muted-foreground">Preproducción</h4>
                         <DeploymentInfo deployment={s.Preproducción} environment="Preproducción" />
                       </div>
-                      <div>
+                      <div className="flex flex-col">
                         <h4 className="text-sm font-semibold mb-2 text-center text-muted-foreground">Producción</h4>
                         <DeploymentInfo deployment={s.Producción} environment="Producción" />
                       </div>
