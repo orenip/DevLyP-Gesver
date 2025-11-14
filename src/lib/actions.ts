@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { readDb, writeDb, Despliegue, Programa, Responsable } from './data';
+import { readDb, writeDb, Despliegue, Programa, Responsable, Plataforma } from './data';
 import { randomUUID } from 'crypto';
 
 const FormSchema = z.object({
@@ -11,7 +11,7 @@ const FormSchema = z.object({
   programa: z.string().min(1, 'Programa no puede estar vacío.'),
   responsable: z.string().min(1, 'Responsable no puede estar vacío.'),
   entorno: z.enum(['Preproducción', 'Producción']),
-  plataforma: z.enum(['IIS', 'Docker']),
+  plataforma: z.string().min(1, 'Plataforma no puede estar vacía.'),
   version: z.string().min(1, 'Versión no puede estar vacía.'),
   accion: z.string().optional(),
   comentario: z.string().optional(),
@@ -20,14 +20,17 @@ const FormSchema = z.object({
   port: z.string().optional(),
 });
 
-const getOrCreate = async (collectionName: 'programas' | 'responsables', name: string) => {
+const getOrCreate = async (collectionName: 'programas' | 'responsables' | 'plataformas', name: string) => {
     const db = await readDb();
-    let collection: (Programa[] | Responsable[]) = db[collectionName];
+    let collection: (Programa[] | Responsable[] | Plataforma[]) = db[collectionName] || [];
     
     let item = collection.find(p => p.nombre.toLowerCase() === name.toLowerCase());
 
     if (!item) {
         const newItem = { id: randomUUID(), nombre: name };
+        if (!db[collectionName]) {
+          db[collectionName] = [];
+        }
         (db[collectionName] as any[]).push(newItem);
         await writeDb(db);
         return newItem.id;
@@ -46,13 +49,17 @@ const handleDeployment = async (formData: FormData, id?: string) => {
     };
   }
   
-  const { fecha, programa, responsable, hasSwagger, ...deploymentData } = validatedFields.data;
+  const { fecha, programa, responsable, plataforma, hasSwagger, ...deploymentData } = validatedFields.data;
 
   try {
     const programaId = await getOrCreate('programas', programa);
     const responsableId = await getOrCreate('responsables', responsable);
+    const plataformaId = await getOrCreate('plataformas', plataforma);
 
     const db = await readDb();
+
+    // We store the name of the platform directly in the deployment
+    const plataformaNombre = db.plataformas.find(p => p.id === plataformaId)?.nombre || plataforma;
 
     if (id) {
         // Update
@@ -67,6 +74,7 @@ const handleDeployment = async (formData: FormData, id?: string) => {
             fecha: new Date(fecha).toISOString(),
             programaId,
             responsableId,
+            plataforma: plataformaNombre,
             hasSwagger: hasSwagger === 'on',
         };
     } else {
@@ -77,6 +85,7 @@ const handleDeployment = async (formData: FormData, id?: string) => {
             fecha: new Date(fecha).toISOString(),
             programaId: programaId,
             responsableId: responsableId,
+            plataforma: plataformaNombre,
             hasSwagger: hasSwagger === 'on',
         };
         db.despliegues.push(newDeployment);

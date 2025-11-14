@@ -80,5 +80,15 @@
       "id": "2b71ee0f-e7ca-4058-9b55-77815dbece13",
       "nombre": "Jose"
     }
+  ],
+  "plataformas": [
+    {
+      "id": "1",
+      "nombre": "IIS"
+    },
+    {
+      "id": "2",
+      "nombre": "Docker"
+    }
   ]
 }

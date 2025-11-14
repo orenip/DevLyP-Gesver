@@ -12,12 +12,17 @@ export interface Responsable {
   nombre: string;
 }
 
+export interface Plataforma {
+    id: string;
+    nombre: string;
+}
+
 export interface Despliegue {
   id: string;
   fecha: string; // Stored as ISO string
   programaId: string;
   entorno: 'Preproducción' | 'Producción';
-  plataforma: 'IIS' | 'Docker';
+  plataforma: string;
   version: string;
   accion?: string;
   responsableId: string;
@@ -36,6 +41,7 @@ interface DbData {
     despliegues: Despliegue[];
     programas: Programa[];
     responsables: Responsable[];
+    plataformas?: Plataforma[];
 }
 
 const dbPath = path.join(process.cwd(), 'data', 'db.json');
@@ -44,10 +50,20 @@ export async function readDb(): Promise<DbData> {
     noStore();
     try {
         const fileContent = await fs.readFile(dbPath, 'utf-8');
-        return JSON.parse(fileContent);
+        const data = JSON.parse(fileContent);
+        if (!data.plataformas) {
+            data.plataformas = [
+                { id: '1', nombre: 'IIS' },
+                { id: '2', nombre: 'Docker' }
+            ];
+        }
+        return data;
     } catch (error) {
         // If the file doesn't exist, return an empty structure
-        return { despliegues: [], programas: [], responsables: [] };
+        return { despliegues: [], programas: [], responsables: [], plataformas: [
+            { id: '1', nombre: 'IIS' },
+            { id: '2', nombre: 'Docker' }
+        ] };
     }
 }
 
@@ -128,6 +144,17 @@ export async function fetchResponsibles(): Promise<Responsable[]> {
     } catch (e) {
       console.error('Database Error:', e);
       throw new Error('Failed to fetch responsibles.');
+    }
+}
+
+export async function fetchPlatforms(): Promise<Plataforma[]> {
+    noStore();
+    try {
+      const db = await readDb();
+      return (db.plataformas || []).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } catch (e) {
+      console.error('Database Error:', e);
+      throw new Error('Failed to fetch platforms.');
     }
 }
 

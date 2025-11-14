@@ -25,8 +25,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CreatableCombobox } from '../ui/creatable-combobox';
 import { useToast } from '@/hooks/use-toast';
-import { DeploymentWithRelations, Programa, Responsable } from '@/lib/data';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { DeploymentWithRelations, Plataforma, Programa, Responsable } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { Switch } from '../ui/switch';
@@ -41,6 +40,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const { toast } = useToast();
   const [programs, setPrograms] = useState<Programa[]>([]);
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
+  const [platforms, setPlatforms] = useState<Plataforma[]>([]);
   const router = useRouter();
   const [hasSwagger, setHasSwagger] = useState(deployment?.hasSwagger || false);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,17 +49,19 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     async function fetchData() {
         setIsLoading(true);
         try {
-            const [progRes, respRes] = await Promise.all([
+            const [progRes, respRes, platRes] = await Promise.all([
                 fetch('/api/programas'),
                 fetch('/api/responsables'),
+                fetch('/api/plataformas'),
             ]);
             if (progRes.ok) setPrograms(await progRes.json());
             if (respRes.ok) setResponsibles(await respRes.json());
+            if (platRes.ok) setPlatforms(await platRes.json());
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error de carga',
-                description: 'No se pudieron cargar los programas y responsables.'
+                description: 'No se pudieron cargar los datos necesarios para el formulario.'
             })
         } finally {
             setIsLoading(false);
@@ -93,6 +95,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
 
   const programOptions = programs.map(p => ({ value: p.nombre, label: p.nombre }));
   const responsibleOptions = responsibles.map(r => ({ value: r.nombre, label: r.nombre }));
+  const platformOptions = platforms.map(p => ({ value: p.nombre, label: p.nombre }));
   const title = deployment ? 'Editar Despliegue' : 'Añadir Nuevo Despliegue';
 
   if (isLoading) {
@@ -135,16 +138,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="plataforma">Plataforma</Label>
-                        <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="flex items-center gap-4 pt-2">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="IIS" id="r1" />
-                                <Label htmlFor="r1" className="font-normal">IIS</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Docker" id="r2" />
-                                <Label htmlFor="r2" className="font-normal">Docker</Label>
-                            </div>
-                        </RadioGroup>
+                        <CreatableCombobox name="plataforma" options={platformOptions} defaultValue={deployment?.plataforma} placeholder="Selecciona o crea una plataforma..." />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="version">Versión</Label>
