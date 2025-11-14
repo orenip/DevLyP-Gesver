@@ -28,7 +28,8 @@
     "@radix-ui/react-select": "^2.0.0",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "react-day-picker": "^8.10.1"
+    "react-day-picker": "^8.10.1",
+    "@radix-ui/react-alert-dialog": "^1.0.5"
   },
   "devDependencies": {
     "@types/node": "^20",
