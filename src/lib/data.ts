@@ -37,7 +37,7 @@ interface DbData {
 
 const dbPath = path.join(process.cwd(), 'data', 'db.json');
 
-async function readDb(): Promise<DbData> {
+export async function readDb(): Promise<DbData> {
     try {
         const fileContent = await fs.readFile(dbPath, 'utf-8');
         return JSON.parse(fileContent);
