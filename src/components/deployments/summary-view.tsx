@@ -1,11 +1,5 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Badge } from '../ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Summary {
     programaNombre: string;
@@ -18,24 +12,33 @@ interface SummaryViewProps {
 }
 
 export function SummaryView({ summary }: SummaryViewProps) {
+  if (summary.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <h3 className="text-xl font-medium">No hay despliegues</h3>
+        <p className="text-sm text-muted-foreground">Añade un despliegue para ver el resumen aquí.</p>
+      </div>
+    )
+  }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Programa</TableHead>
-          <TableHead>Última Versión en Preproducción</TableHead>
-          <TableHead>Última Versión en Producción</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {summary.map((s) => (
-          <TableRow key={s.programaNombre}>
-            <TableCell className="font-medium">{s.programaNombre}</TableCell>
-            <TableCell>{s.Preproducción || '-'}</TableCell>
-            <TableCell>{s.Producción || '-'}</TableCell>
-          </TableRow>
+            <Card key={s.programaNombre}>
+                <CardHeader>
+                    <CardTitle>{s.programaNombre}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Preproducción</span>
+                        {s.Preproducción ? <Badge variant="secondary">{s.Preproducción}</Badge> : <span>-</span>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Producción</span>
+                        {s.Producción ? <Badge variant="default">{s.Producción}</Badge> : <span>-</span>}
+                    </div>
+                </CardContent>
+            </Card>
         ))}
-      </TableBody>
-    </Table>
+    </div>
   );
 }

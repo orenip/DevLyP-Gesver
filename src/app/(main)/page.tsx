@@ -6,15 +6,9 @@ export default async function Home() {
   const summary = await fetchSummary();
 
   return (
-    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Resumen de Versiones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SummaryView summary={summary} />
-            </CardContent>
-        </Card>
+    <div>
+        <h1 className="text-2xl font-bold tracking-tight mb-4">Resumen de Versiones</h1>
+        <SummaryView summary={summary} />
     </div>
   );
 }

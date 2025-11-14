@@ -30,6 +30,11 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
   {
     accessorKey: 'entorno',
     header: 'Entorno',
+    cell: ({ row }) => {
+      const entorno = row.getValue('entorno') as string;
+      const variant = entorno === 'Producción' ? 'default' : 'secondary';
+      return <Badge variant={variant}>{entorno}</Badge>
+    }
   },
   {
     accessorKey: 'version',
@@ -41,7 +46,7 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
     cell: ({ row }) => {
       const plataforma = row.getValue('plataforma') as string;
       if (!plataforma) return '-';
-      return <Badge variant="secondary">{plataforma}</Badge>
+      return <Badge variant="outline">{plataforma}</Badge>
     }
   },
   {

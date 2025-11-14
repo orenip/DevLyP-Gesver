@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -84,24 +83,18 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
         </SheetHeader>
         <form action={action}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="fecha" className="text-right">
-                Fecha
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="fecha">Fecha</Label>
               <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="programa" className="text-right">
-                Programa
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="programa">Programa</Label>
               <ComboboxInput name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona programa..." />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="entorno" className="text-right">
-                Entorno
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="entorno">Entorno</Label>
               <Select name="entorno" defaultValue={deployment?.entorno}>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Selecciona un entorno" />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,11 +103,9 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="plataforma" className="text-right">
-                    Plataforma
-                </Label>
-                <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="col-span-3 flex items-center gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="plataforma">Plataforma</Label>
+                <RadioGroup name="plataforma" defaultValue={deployment?.plataforma || 'IIS'} className="flex items-center gap-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="IIS" id="r1" />
                         <Label htmlFor="r1">IIS</Label>
@@ -125,29 +116,21 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
                     </div>
                 </RadioGroup>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="version" className="text-right">
-                Versión
-              </Label>
-              <Input id="version" name="version" defaultValue={deployment?.version} className="col-span-3" />
+            <div className="space-y-2">
+              <Label htmlFor="version">Versión</Label>
+              <Input id="version" name="version" defaultValue={deployment?.version} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="accion" className="text-right">
-                Acción
-              </Label>
-              <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} className="col-span-3" />
+            <div className="space-y-2">
+              <Label htmlFor="accion">Acción</Label>
+              <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="responsable" className="text-right">
-                Responsable
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="responsable">Responsable</Label>
               <ComboboxInput name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona responsable..." />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="comentario" className="text-right">
-                Comentario
-              </Label>
-              <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} className="col-span-3" />
+            <div className="space-y-2">
+              <Label htmlFor="comentario">Comentario</Label>
+              <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
             </div>
           </div>
           <SheetFooter>
@@ -177,7 +160,7 @@ function DatePicker({ defaultValue }: { defaultValue?: Date }) {
           <Button
             variant={"outline"}
             className={cn(
-              "col-span-3 justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >

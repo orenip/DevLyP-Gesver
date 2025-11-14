@@ -37,7 +37,7 @@ export function ComboboxInput({ name, options, defaultValue, placeholder }: Comb
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="col-span-3 justify-between"
+          className="w-full justify-between"
         >
           {value
             ? options.find((option) => option.value === value)?.label
@@ -45,7 +45,7 @@ export function ComboboxInput({ name, options, defaultValue, placeholder }: Comb
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[375px] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder="Search option..." />
           <CommandList>
