@@ -145,22 +145,19 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
                         <Label htmlFor="comentario">Comentario</Label>
                         <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
                     </div>
-                    <div className="space-y-2 flex items-center gap-2">
+
+                    <div className="space-y-2">
+                        <Label htmlFor="url">URL de Acceso</Label>
+                        <Input id="url" name="url" defaultValue={deployment?.url || ''} placeholder="https://miapi.com" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="port">Puerto</Label>
+                        <Input id="port" name="port" type="number" defaultValue={deployment?.port || ''} placeholder="8080" />
+                    </div>
+                    <div className="space-y-2 flex items-center gap-2 pt-6">
                         <Switch id="has-swagger" name="hasSwagger" checked={hasSwagger} onCheckedChange={setHasSwagger} />
                         <Label htmlFor="has-swagger" className="font-normal">¿Tiene Swagger?</Label>
                     </div>
-                    {hasSwagger && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="swaggerUrl">URL de Swagger</Label>
-                                <Input id="swaggerUrl" name="swaggerUrl" defaultValue={deployment?.swaggerUrl || ''} placeholder="https://miapi.com/swagger" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="port">Puerto</Label>
-                                <Input id="port" name="port" type="number" defaultValue={deployment?.port || ''} placeholder="8080" />
-                            </div>
-                        </>
-                    )}
                 </div>
                 <div className="flex justify-end">
                     <SubmitButton />

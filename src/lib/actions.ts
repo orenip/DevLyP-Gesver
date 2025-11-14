@@ -16,7 +16,7 @@ const FormSchema = z.object({
   accion: z.string().optional(),
   comentario: z.string().optional(),
   hasSwagger: z.string().optional(),
-  swaggerUrl: z.string().optional(),
+  url: z.string().optional(),
   port: z.string().optional(),
 });
 

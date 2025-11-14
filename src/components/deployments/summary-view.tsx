@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DeploymentWithRelations, SummaryItem } from '@/lib/data';
 import { useState } from 'react';
 import { DeploymentDetailsDialog } from './deployment-details-dialog';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar, ChevronsUpDown, Server, User } from 'lucide-react';
 
 interface SummaryViewProps {
   summary: SummaryItem[];
@@ -28,42 +31,58 @@ export function SummaryView({ summary }: SummaryViewProps) {
     }
   }
 
+  const DeploymentInfo = ({ deployment, environment }: { deployment: DeploymentWithRelations | null, environment: 'Preproducción' | 'Producción' }) => {
+    if (!deployment) {
+      return (
+        <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg h-full text-sm text-muted-foreground">
+          <Server className="w-5 h-5 mb-2" />
+          <span>Sin datos</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <Badge 
+            variant={environment === 'Producción' ? 'default' : 'secondary'}
+            className="cursor-pointer text-base"
+            onClick={() => setSelectedDeployment(deployment)}
+          >
+            v{deployment.version}
+          </Badge>
+        </div>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <div className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5" />
+            <span>{deployment.responsable.nombre}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{format(new Date(deployment.fecha), "dd/MM/yyyy")}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {summary.map((s) => (
-              <Card key={s.programaNombre}>
+              <Card key={s.programaId} className="flex flex-col">
                   <CardHeader>
-                      <CardTitle>{s.programaNombre}</CardTitle>
+                      <CardTitle className="truncate">{s.programaNombre}</CardTitle>
+                      <CardDescription>Últimas versiones desplegadas</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
-                      <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Preproducción</span>
-                          {s.Preproducción ? (
-                            <Badge 
-                              variant="secondary" 
-                              className="cursor-pointer"
-                              onClick={() => setSelectedDeployment(s.Preproducción)}
-                            >
-                              {s.Preproducción.version}
-                            </Badge>
-                          ) : (
-                            <span>-</span>
-                          )}
+                  <CardContent className="flex-grow grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 text-center text-muted-foreground">Preproducción</h4>
+                        <DeploymentInfo deployment={s.Preproducción} environment="Preproducción" />
                       </div>
-                      <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Producción</span>
-                          {s.Producción ? (
-                            <Badge 
-                              variant="default"
-                              className="cursor-pointer"
-                              onClick={() => setSelectedDeployment(s.Producción)}
-                            >
-                               {s.Producción.version}
-                            </Badge>
-                          ) : (
-                            <span>-</span>
-                          )}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 text-center text-muted-foreground">Producción</h4>
+                        <DeploymentInfo deployment={s.Producción} environment="Producción" />
                       </div>
                   </CardContent>
               </Card>

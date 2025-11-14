@@ -23,7 +23,7 @@ export interface Despliegue {
   responsableId: string;
   comentario?: string;
   hasSwagger?: boolean;
-  swaggerUrl?: string;
+  url?: string;
   port?: string;
 }
 
@@ -113,7 +113,7 @@ export async function fetchPrograms(): Promise<Programa[]> {
   noStore();
   try {
     const db = await readDb();
-    return db.programas;
+    return db.programas.sort((a, b) => a.nombre.localeCompare(b.nombre));
   } catch (e) {
     console.error('Database Error:', e);
     throw new Error('Failed to fetch programs.');
@@ -124,7 +124,7 @@ export async function fetchResponsibles(): Promise<Responsable[]> {
     noStore();
     try {
       const db = await readDb();
-      return db.responsables;
+      return db.responsables.sort((a, b) => a.nombre.localeCompare(b.nombre));
     } catch (e) {
       console.error('Database Error:', e);
       throw new Error('Failed to fetch responsibles.');
@@ -132,6 +132,7 @@ export async function fetchResponsibles(): Promise<Responsable[]> {
 }
 
 export type SummaryItem = {
+    programaId: string;
     programaNombre: string;
     Preproducción: DeploymentWithRelations | null;
     Producción: DeploymentWithRelations | null;
@@ -141,30 +142,47 @@ export async function fetchSummary(): Promise<SummaryItem[]> {
     noStore();
     try {
         const db = await readDb();
-        const { programas, despliegues } = db;
+        const { programas, despliegues, responsables } = db;
         
-        const summary: SummaryItem[] = [];
+        const summaryMap = new Map<string, SummaryItem>();
 
-        const deploymentsWithRelations = fetchWithRelations(despliegues, programas, db.responsables);
-
-        for(const program of programas) {
-            const programDeployments = deploymentsWithRelations.filter(d => d.programa.id === program.id);
-            
-            const preprodDeployments = programDeployments
-                .filter(d => d.entorno === 'Preproducción')
-                .sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
-            const prodDeployments = programDeployments
-                .filter(d => d.entorno === 'Producción')
-                .sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
-            summary.push({
+        // Initialize summary for all programs
+        for (const program of programas) {
+            summaryMap.set(program.id, {
+                programaId: program.id,
                 programaNombre: program.nombre,
-                Preproducción: preprodDeployments.length > 0 ? preprodDeployments[0] : null,
-                Producción: prodDeployments.length > 0 ? prodDeployments[0] : null,
+                Preproducción: null,
+                Producción: null,
             });
         }
-        return summary;
+        
+        // Sort deployments by date descending
+        const sortedDeployments = [...despliegues].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        
+        const latestDeployments = new Map<string, Despliegue>();
+
+        for (const deployment of sortedDeployments) {
+            const key = `${deployment.programaId}-${deployment.entorno}`;
+            if (!latestDeployments.has(key)) {
+                latestDeployments.set(key, deployment);
+            }
+        }
+        
+        const deploymentsWithRelations = fetchWithRelations(Array.from(latestDeployments.values()), programas, responsables);
+        
+        for (const deployment of deploymentsWithRelations) {
+            const summaryItem = summaryMap.get(deployment.programa.id);
+            if (summaryItem) {
+                if (deployment.entorno === 'Preproducción') {
+                    summaryItem.Preproducción = deployment;
+                } else if (deployment.entorno === 'Producción') {
+                    summaryItem.Producción = deployment;
+                }
+            }
+        }
+
+        return Array.from(summaryMap.values()).sort((a,b) => a.programaNombre.localeCompare(b.programaNombre));
+
     } catch (e) {
         console.error('Database Error:', e);
         throw new Error('Failed to fetch summary.');

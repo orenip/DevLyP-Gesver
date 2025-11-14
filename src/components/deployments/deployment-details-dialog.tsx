@@ -66,27 +66,25 @@ export function DeploymentDetailsDialog({ deployment, open, onOpenChange }: Depl
                     <p className="col-span-2 break-words">{deployment.comentario}</p>
                 </div>
             )}
-            {deployment.hasSwagger && (
-                <>
+            {deployment.url && (
+                <div className="grid grid-cols-3 items-center gap-4">
+                    <span className="text-muted-foreground">URL Acceso</span>
+                    <a href={deployment.url} target="_blank" rel="noopener noreferrer" className="col-span-2 text-primary hover:underline break-all">{deployment.url}</a>
+                </div>
+            )}
+            {deployment.port && (
                     <div className="grid grid-cols-3 items-center gap-4">
-                        <span className="text-muted-foreground">Swagger</span>
-                        <div className="col-span-2">
-                            <Badge variant="secondary">Activado</Badge>
-                        </div>
+                    <span className="text-muted-foreground">Puerto</span>
+                    <span className="col-span-2">{deployment.port}</span>
+                </div>
+            )}
+            {deployment.hasSwagger && (
+                <div className="grid grid-cols-3 items-center gap-4">
+                    <span className="text-muted-foreground">Swagger</span>
+                    <div className="col-span-2">
+                        <Badge variant="secondary">Activado</Badge>
                     </div>
-                    {deployment.swaggerUrl && (
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <span className="text-muted-foreground">URL</span>
-                            <a href={deployment.swaggerUrl} target="_blank" rel="noopener noreferrer" className="col-span-2 text-primary hover:underline break-all">{deployment.swaggerUrl}</a>
-                        </div>
-                    )}
-                    {deployment.port && (
-                         <div className="grid grid-cols-3 items-center gap-4">
-                            <span className="text-muted-foreground">Puerto</span>
-                            <span className="col-span-2">{deployment.port}</span>
-                        </div>
-                    )}
-                </>
+                </div>
             )}
         </div>
       </DialogContent>
