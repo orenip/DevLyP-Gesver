@@ -23,7 +23,6 @@ import {
 import { Textarea } from '../ui/textarea';
 import { saveDeployment, updateDeployment } from '@/lib/actions';
 import { useFormStatus } from 'react-dom';
-import { Despliegue, Programa, Responsable } from '@prisma/client';
 import { useEffect, useState } from 'react';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -36,11 +35,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ComboboxInput } from '../ui/combobox';
 import { useToast } from '@/hooks/use-toast';
+import { DeploymentWithRelations, Programa, Responsable, fetchPrograms, fetchResponsibles } from '@/lib/data';
 
-type DeploymentWithRelations = Despliegue & {
-  programa: Programa;
-  responsable: Responsable;
-};
 
 interface DeploymentSheetProps {
   children: React.ReactNode;
@@ -50,12 +46,12 @@ interface DeploymentSheetProps {
 export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const [programs, setPrograms] = useState<{value: string, label: string}[]>([]);
-  const [responsibles, setResponsibles] = useState<{value: string, label: string}[]>([]);
+  const [programs, setPrograms] = useState<Programa[]>([]);
+  const [responsibles, setResponsibles] = useState<Responsable[]>([]);
 
   useEffect(() => {
-    fetch('/api/programas').then(res => res.json()).then(data => setPrograms(data.map((p: Programa) => ({ value: p.nombre, label: p.nombre }))));
-    fetch('/api/responsables').then(res => res.json()).then(data => setResponsibles(data.map((r: Responsable) => ({ value: r.nombre, label: r.nombre }))));
+    fetchPrograms().then(setPrograms);
+    fetchResponsibles().then(setResponsibles);
   }, [])
 
   const action = async (formData: FormData) => {
@@ -71,6 +67,9 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
     }
     setOpen(false);
   };
+
+  const programOptions = programs.map(p => ({ value: p.nombre, label: p.nombre }));
+  const responsibleOptions = responsibles.map(r => ({ value: r.nombre, label: r.nombre }));
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -88,13 +87,13 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
               <Label htmlFor="fecha" className="text-right">
                 Fecha
               </Label>
-              <DatePicker defaultValue={deployment?.fecha} />
+              <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="programa" className="text-right">
                 Programa
               </Label>
-              <ComboboxInput name="programa" options={programs} defaultValue={deployment?.programa.nombre} placeholder="Selecciona programa..." />
+              <ComboboxInput name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona programa..." />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="entorno" className="text-right">
@@ -126,7 +125,7 @@ export function DeploymentSheet({ children, deployment }: DeploymentSheetProps) 
               <Label htmlFor="responsable" className="text-right">
                 Responsable
               </Label>
-              <ComboboxInput name="responsable" options={responsibles} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona responsable..." />
+              <ComboboxInput name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona responsable..." />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="comentario" className="text-right">

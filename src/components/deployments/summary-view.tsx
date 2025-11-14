@@ -8,12 +8,9 @@ import {
 } from '@/components/ui/table';
 
 interface Summary {
-  programaId: number;
-  entorno: string;
-  _max: {
-    version: string | null;
-  };
-  programaNombre: string;
+    programaNombre: string;
+    Preproducción: string | null;
+    Producción: string | null;
 }
 
 interface SummaryViewProps {
@@ -21,15 +18,6 @@ interface SummaryViewProps {
 }
 
 export function SummaryView({ summary }: SummaryViewProps) {
-    const groupedByProgram = summary.reduce((acc, curr) => {
-        if (!acc[curr.programaNombre]) {
-            acc[curr.programaNombre] = {};
-        }
-        acc[curr.programaNombre][curr.entorno] = curr._max.version;
-        return acc;
-    }, {} as Record<string, Record<string, string | null>>);
-
-
   return (
     <Table>
       <TableHeader>
@@ -40,11 +28,11 @@ export function SummaryView({ summary }: SummaryViewProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Object.entries(groupedByProgram).map(([programa, entornos]) => (
-          <TableRow key={programa}>
-            <TableCell className="font-medium">{programa}</TableCell>
-            <TableCell>{entornos['Preproducción'] || '-'}</TableCell>
-            <TableCell>{entornos['Producción'] || '-'}</TableCell>
+        {summary.map((s) => (
+          <TableRow key={s.programaNombre}>
+            <TableCell className="font-medium">{s.programaNombre}</TableCell>
+            <TableCell>{s.Preproducción || '-'}</TableCell>
+            <TableCell>{s.Producción || '-'}</TableCell>
           </TableRow>
         ))}
       </TableBody>

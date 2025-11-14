@@ -6,15 +6,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { DataTable } from '@/components/deployments/data-table';
-import { columns, Deployment } from '@/components/deployments/columns';
+import { columns } from '@/components/deployments/columns';
 import { DeploymentSheet } from './deployment-sheet';
 import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
-import { Programa, Responsable } from '@prisma/client';
+import { DeploymentWithRelations, Programa, Responsable } from '@/lib/data';
+
 
 interface DeploymentsTableProps {
-  deployments: Deployment[];
+  deployments: DeploymentWithRelations[];
   programs: Programa[];
   responsibles: Responsable[];
 }

@@ -1,9 +1,9 @@
-import prisma from '@/lib/prisma';
 import { DeploymentsTable } from '@/components/deployments/deployments-table';
 import { SummaryView } from '@/components/deployments/summary-view';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Suspense } from 'react';
 import { TableSkeleton } from '@/components/skeletons';
+import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles, fetchSummary } from '@/lib/data';
 
 export default async function Home({
   searchParams,
@@ -20,57 +20,10 @@ export default async function Home({
   const programaId = searchParams?.programaId;
   const responsableId = searchParams?.responsableId;
 
-  const where: any = {};
-  if (query) {
-    where.OR = [
-      { programa: { nombre: { contains: query } } },
-      { version: { contains: query } },
-      { responsable: { nombre: { contains: query } } },
-      { comentario: { contains: query } },
-      { accion: { contains: query } },
-    ];
-  }
-  if (entorno) {
-    where.entorno = entorno;
-  }
-  if (programaId) {
-    where.programaId = parseInt(programaId);
-  }
-  if (responsableId) {
-    where.responsableId = parseInt(responsableId);
-  }
-
-  const deployments = await prisma.despliegue.findMany({
-    where,
-    include: {
-      programa: true,
-      responsable: true,
-    },
-    orderBy: {
-      fecha: 'desc',
-    },
-  });
-
-  const summary = await prisma.despliegue.groupBy({
-    by: ['programaId', 'entorno'],
-    _max: {
-      version: true,
-    },
-    orderBy: {
-      programaId: 'asc'
-    }
-  });
-
-  const programs = await prisma.programa.findMany();
-  const responsibles = await prisma.responsable.findMany();
-
-  const summaryWithProgramNames = summary.map(s => {
-    const program = programs.find(p => p.id === s.programaId);
-    return {
-      ...s,
-      programaNombre: program?.nombre || 'Desconocido'
-    }
-  });
+  const deployments = await fetchFilteredDeployments(query, entorno, programaId, responsableId);
+  const summary = await fetchSummary();
+  const programs = await fetchPrograms();
+  const responsibles = await fetchResponsibles();
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -81,7 +34,7 @@ export default async function Home({
               <CardTitle>Resumen de Versiones</CardTitle>
             </CardHeader>
             <CardContent>
-              <SummaryView summary={summaryWithProgramNames} />
+              <SummaryView summary={summary} />
             </CardContent>
           </Card>
         </div>

@@ -1,11 +1,12 @@
 'use server';
 
-import { z } from 'zod';
-import prisma from './prisma';
 import { revalidatePath } from 'next/cache';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { z } from 'zod';
 
 const FormSchema = z.object({
-  id: z.number().optional(),
+  id: z.string().optional(),
   fecha: z.string(),
   programa: z.string().min(1, 'Programa no puede estar vacío.'),
   responsable: z.string().min(1, 'Responsable no puede estar vacío.'),
@@ -14,6 +15,17 @@ const FormSchema = z.object({
   accion: z.string().optional(),
   comentario: z.string().optional(),
 });
+
+const getOrCreate = async (collectionName: string, name: string) => {
+    const q = query(collection(db, collectionName), where("nombre", "==", name));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+        return snapshot.docs[0].id;
+    } else {
+        const docRef = await addDoc(collection(db, collectionName), { nombre: name });
+        return docRef.id;
+    }
+};
 
 export async function saveDeployment(formData: FormData) {
   const validatedFields = FormSchema.safeParse({
@@ -36,28 +48,17 @@ export async function saveDeployment(formData: FormData) {
   const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
   try {
-    const [programaRecord, responsableRecord] = await Promise.all([
-      prisma.programa.upsert({
-        where: { nombre: programa },
-        update: {},
-        create: { nombre: programa },
-      }),
-      prisma.responsable.upsert({
-        where: { nombre: responsable },
-        update: {},
-        create: { nombre: responsable },
-      }),
-    ]);
+    const programaId = await getOrCreate('programas', programa);
+    const responsableId = await getOrCreate('responsables', responsable);
 
-    await prisma.despliegue.create({
-      data: {
+    await addDoc(collection(db, 'despliegues'), {
         ...deploymentData,
         fecha: new Date(fecha),
-        programaId: programaRecord.id,
-        responsableId: responsableRecord.id,
-      },
+        programaId: programaId,
+        responsableId: responsableId,
     });
   } catch (error) {
+    console.error(error);
     return { message: 'Error de base de datos: No se pudo crear el despliegue.' };
   }
 
@@ -65,7 +66,7 @@ export async function saveDeployment(formData: FormData) {
   return { message: 'Despliegue añadido exitosamente.' };
 }
 
-export async function updateDeployment(id: number, formData: FormData) {
+export async function updateDeployment(id: string, formData: FormData) {
     const validatedFields = FormSchema.safeParse({
         fecha: formData.get('fecha'),
         programa: formData.get('programa'),
@@ -86,29 +87,17 @@ export async function updateDeployment(id: number, formData: FormData) {
       const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
       try {
-        const [programaRecord, responsableRecord] = await Promise.all([
-          prisma.programa.upsert({
-            where: { nombre: programa },
-            update: {},
-            create: { nombre: programa },
-          }),
-          prisma.responsable.upsert({
-            where: { nombre: responsable },
-            update: {},
-            create: { nombre: responsable },
-          }),
-        ]);
+        const programaId = await getOrCreate('programas', programa);
+        const responsableId = await getOrCreate('responsables', responsable);
     
-        await prisma.despliegue.update({
-            where: { id },
-            data: {
-                ...deploymentData,
-                fecha: new Date(fecha),
-                programaId: programaRecord.id,
-                responsableId: responsableRecord.id,
-            },
+        await updateDoc(doc(db, 'despliegues', id), {
+            ...deploymentData,
+            fecha: new Date(fecha),
+            programaId: programaId,
+            responsableId: responsableId,
         });
     } catch (error) {
+        console.error(error);
         return { message: 'Error de base de datos: No se pudo actualizar el despliegue.' };
     }
 
@@ -117,11 +106,9 @@ export async function updateDeployment(id: number, formData: FormData) {
 }
 
 
-export async function deleteDeployment(id: number) {
+export async function deleteDeployment(id: string) {
   try {
-    await prisma.despliegue.delete({
-      where: { id },
-    });
+    await deleteDoc(doc(db, 'despliegues', id));
     revalidatePath('/');
     return { message: 'Despliegue eliminado.' };
   } catch (error) {

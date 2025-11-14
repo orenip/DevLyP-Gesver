@@ -11,16 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Despliegue, Programa, Responsable } from '@prisma/client';
 import { DeploymentSheet } from './deployment-sheet';
 import { DeleteDialog } from './delete-dialog';
+import { DeploymentWithRelations } from '@/lib/data';
 
-export type Deployment = Despliegue & {
-  programa: Programa;
-  responsable: Responsable;
-};
 
-export const columns: ColumnDef<Deployment>[] = [
+export const columns: ColumnDef<DeploymentWithRelations>[] = [
   {
     accessorKey: 'fecha',
     header: 'Fecha',

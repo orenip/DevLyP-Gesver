@@ -14,7 +14,7 @@ import { deleteDeployment } from '@/lib/actions';
 
 interface DeleteDialogProps {
   children: React.ReactNode;
-  deploymentId: number;
+  deploymentId: string;
 }
 
 export function DeleteDialog({ children, deploymentId }: DeleteDialogProps) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { fetchPrograms } from '@/lib/data';
 
 export async function GET() {
-  const programas = await prisma.programa.findMany();
+  const programas = await fetchPrograms();
   return NextResponse.json(programas);
 }

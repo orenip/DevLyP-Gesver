@@ -10,7 +10,8 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
-import { Programa, Responsable } from '@prisma/client';
+import { Programa, Responsable } from '@/lib/data';
+
 
 export function Filters({ programs, responsibles }: { programs: Programa[], responsibles: Responsable[]}) {
   const searchParams = useSearchParams();
