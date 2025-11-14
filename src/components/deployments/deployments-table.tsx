@@ -61,8 +61,10 @@ export function DeploymentsTable({ query, entorno, programaId, responsableId }: 
 }
 
 async function FiltersWrapper() {
-  const programs = await fetchPrograms();
-  const responsibles = await fetchResponsibles();
+  const [programs, responsibles] = await Promise.all([
+    fetchPrograms(),
+    fetchResponsibles(),
+  ]);
   return <Filters programs={programs} responsibles={responsibles} />;
 }
 

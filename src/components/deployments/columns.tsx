@@ -54,37 +54,31 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
     header: 'Responsable',
   },
   {
-    accessorKey: 'comentario',
-    header: 'Comentario',
-    cell: ({ row }) => {
-        const comentario = row.getValue('comentario') as string;
-        return <div className="truncate max-w-xs">{comentario || '-'}</div>
-    }
-  },
-  {
     id: 'actions',
     cell: ({ row }) => {
       const deployment = row.original;
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-            <DeploymentSheet deployment={deployment}>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Editar</DropdownMenuItem>
-            </DeploymentSheet>
-            <DropdownMenuSeparator />
-            <DeleteDialog deploymentId={deployment.id}>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">Eliminar</DropdownMenuItem>
-            </DeleteDialog>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DeploymentSheet deployment={deployment}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Editar</DropdownMenuItem>
+              </DeploymentSheet>
+              <DropdownMenuSeparator />
+              <DeleteDialog deploymentId={deployment.id}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600 focus:bg-red-50">Eliminar</DropdownMenuItem>
+              </DeleteDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },

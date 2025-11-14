@@ -20,6 +20,7 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
 
   const handleSearch = useDebouncedCallback((term: string) => {
     const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
     if (term) {
       params.set('query', term);
     } else {
@@ -30,6 +31,7 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
 
   const handleFilterChange = (key: string) => (value: string) => {
     const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
     if (value && value !== 'all') {
       params.set(key, value);
     } else {
@@ -39,44 +41,44 @@ export function Filters({ programs, responsibles }: { programs: Programa[], resp
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
-        <Input
-          type="search"
-          placeholder="Buscar despliegues..."
-          className="w-full"
-          onChange={(e) => handleSearch(e.target.value)}
-          defaultValue={searchParams.get('query')?.toString()}
-        />
-        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-4">
-            <Select onValueChange={handleFilterChange('entorno')} defaultValue={searchParams.get('entorno') || 'all'}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Entorno" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Entornos</SelectItem>
-                    <SelectItem value="Preproducción">Preproducción</SelectItem>
-                    <SelectItem value="Producción">Producción</SelectItem>
-                </SelectContent>
-            </Select>
-            <Select onValueChange={handleFilterChange('programaId')} defaultValue={searchParams.get('programaId') || 'all'}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Programa" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Programas</SelectItem>
-                    {programs.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.nombre}</SelectItem>)}
-                </SelectContent>
-            </Select>
-            <Select onValueChange={handleFilterChange('responsableId')} defaultValue={searchParams.get('responsableId') || 'all'}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Responsable" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Responsables</SelectItem>
-                    {responsibles.map(r => <SelectItem key={r.id} value={r.id.toString()}>{r.nombre}</SelectItem>)}
-                </SelectContent>
-            </Select>
-        </div>
+    <div className="flex flex-col gap-4 pt-4">
+      <Input
+        type="search"
+        placeholder="Buscar despliegues..."
+        className="w-full"
+        onChange={(e) => handleSearch(e.target.value)}
+        defaultValue={searchParams.get('query')?.toString()}
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Select onValueChange={handleFilterChange('entorno')} defaultValue={searchParams.get('entorno') || 'all'}>
+              <SelectTrigger>
+                  <SelectValue placeholder="Entorno" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">Todos los Entornos</SelectItem>
+                  <SelectItem value="Preproducción">Preproducción</SelectItem>
+                  <SelectItem value="Producción">Producción</SelectItem>
+              </SelectContent>
+          </Select>
+          <Select onValueChange={handleFilterChange('programaId')} defaultValue={searchParams.get('programaId') || 'all'}>
+              <SelectTrigger>
+                  <SelectValue placeholder="Programa" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">Todos los Programas</SelectItem>
+                  {programs.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
+              </SelectContent>
+          </Select>
+          <Select onValueChange={handleFilterChange('responsableId')} defaultValue={searchParams.get('responsableId') || 'all'}>
+              <SelectTrigger>
+                  <SelectValue placeholder="Responsable" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">Todos los Responsables</SelectItem>
+                  {responsibles.map(r => <SelectItem key={r.id} value={r.id}>{r.nombre}</SelectItem>)}
+              </SelectContent>
+          </Select>
+      </div>
     </div>
   );
 }

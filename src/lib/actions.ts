@@ -1,9 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { z } from 'zod';
+import { readDb, writeDb, Despliegue } from './data';
+import { randomUUID } from 'crypto';
 
 const FormSchema = z.object({
   id: z.string().optional(),
@@ -17,28 +17,22 @@ const FormSchema = z.object({
   comentario: z.string().optional(),
 });
 
-const getOrCreate = async (collectionName: string, name: string) => {
-    const q = query(collection(db, collectionName), where("nombre", "==", name));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-        return snapshot.docs[0].id;
-    } else {
-        const docRef = await addDoc(collection(db, collectionName), { nombre: name });
-        return docRef.id;
+const getOrCreate = async (collectionName: 'programas' | 'responsables', name: string) => {
+    const db = await readDb();
+    const collection = db[collectionName];
+    let item = collection.find(p => p.nombre.toLowerCase() === name.toLowerCase());
+
+    if (!item) {
+        item = { id: randomUUID(), nombre: name };
+        // @ts-ignore
+        db[collectionName].push(item);
+        await writeDb(db);
     }
+    return item.id;
 };
 
 export async function saveDeployment(formData: FormData) {
-  const validatedFields = FormSchema.safeParse({
-    fecha: formData.get('fecha'),
-    programa: formData.get('programa'),
-    responsable: formData.get('responsable'),
-    entorno: formData.get('entorno'),
-    plataforma: formData.get('plataforma'),
-    version: formData.get('version'),
-    accion: formData.get('accion'),
-    comentario: formData.get('comentario'),
-  });
+  const validatedFields = FormSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
     return {
@@ -50,15 +44,20 @@ export async function saveDeployment(formData: FormData) {
   const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
   try {
+    const db = await readDb();
     const programaId = await getOrCreate('programas', programa);
     const responsableId = await getOrCreate('responsables', responsable);
 
-    await addDoc(collection(db, 'despliegues'), {
+    const newDeployment: Despliegue = {
+        id: randomUUID(),
         ...deploymentData,
-        fecha: new Date(fecha),
+        fecha: new Date(fecha).toISOString(),
         programaId: programaId,
         responsableId: responsableId,
-    });
+    };
+    db.despliegues.push(newDeployment);
+    await writeDb(db);
+
   } catch (error) {
     console.error(error);
     return { message: 'Error de base de datos: No se pudo crear el despliegue.' };
@@ -70,16 +69,7 @@ export async function saveDeployment(formData: FormData) {
 }
 
 export async function updateDeployment(id: string, formData: FormData) {
-    const validatedFields = FormSchema.safeParse({
-        fecha: formData.get('fecha'),
-        programa: formData.get('programa'),
-        responsable: formData.get('responsable'),
-        entorno: formData.get('entorno'),
-        plataforma: formData.get('plataforma'),
-        version: formData.get('version'),
-        accion: formData.get('accion'),
-        comentario: formData.get('comentario'),
-      });
+    const validatedFields = FormSchema.safeParse(Object.fromEntries(formData.entries()));
     
       if (!validatedFields.success) {
         return {
@@ -91,15 +81,24 @@ export async function updateDeployment(id: string, formData: FormData) {
       const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
       try {
+        const db = await readDb();
         const programaId = await getOrCreate('programas', programa);
         const responsableId = await getOrCreate('responsables', responsable);
+
+        const deploymentIndex = db.despliegues.findIndex(d => d.id === id);
+        if (deploymentIndex === -1) {
+            return { message: 'Error: Despliegue no encontrado.' };
+        }
     
-        await updateDoc(doc(db, 'despliegues', id), {
+        db.despliegues[deploymentIndex] = {
+            ...db.despliegues[deploymentIndex],
             ...deploymentData,
-            fecha: new Date(fecha),
-            programaId: programaId,
-            responsableId: responsableId,
-        });
+            fecha: new Date(fecha).toISOString(),
+            programaId,
+            responsableId
+        };
+        await writeDb(db);
+
     } catch (error) {
         console.error(error);
         return { message: 'Error de base de datos: No se pudo actualizar el despliegue.' };
@@ -113,7 +112,10 @@ export async function updateDeployment(id: string, formData: FormData) {
 
 export async function deleteDeployment(id: string) {
   try {
-    await deleteDoc(doc(db, 'despliegues', id));
+    const db = await readDb();
+    db.despliegues = db.despliegues.filter(d => d.id !== id);
+    await writeDb(db);
+
     revalidatePath('/deployments');
     revalidatePath('/');
     return { message: 'Despliegue eliminado.' };

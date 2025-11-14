@@ -1,15 +1,5 @@
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export interface Programa {
@@ -24,7 +14,7 @@ export interface Responsable {
 
 export interface Despliegue {
   id: string;
-  fecha: Date | Timestamp;
+  fecha: string; // Stored as ISO string
   programaId: string;
   entorno: 'Preproducción' | 'Producción';
   plataforma: 'IIS' | 'Docker';
@@ -34,29 +24,44 @@ export interface Despliegue {
   comentario?: string;
 }
 
-export type DeploymentWithRelations = Despliegue & {
+export type DeploymentWithRelations = Omit<Despliegue, 'programaId' | 'responsableId'> & {
   programa: Programa;
   responsable: Responsable;
 };
 
-const fetchWithRelations = async (despliegues: Despliegue[]): Promise<DeploymentWithRelations[]> => {
-  const programaIds = [...new Set(despliegues.map(d => d.programaId))];
-  const responsableIds = [...new Set(despliegues.map(d => d.responsableId))];
+interface DbData {
+    despliegues: Despliegue[];
+    programas: Programa[];
+    responsables: Responsable[];
+}
 
-  const [programasSnap, responsablesSnap] = await Promise.all([
-    programaIds.length > 0 ? getDocs(query(collection(db, 'programas'), where('__name__', 'in', programaIds))) : Promise.resolve({ docs: [] }),
-    responsableIds.length > 0 ? getDocs(query(collection(db, 'responsables'), where('__name__', 'in', responsableIds))) : Promise.resolve({ docs: [] }),
-  ]);
+const dbPath = path.join(process.cwd(), 'data', 'db.json');
 
-  const programasMap = new Map(programasSnap.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Programa]));
-  const responsablesMap = new Map(responsablesSnap.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as Responsable]));
+async function readDb(): Promise<DbData> {
+    try {
+        const fileContent = await fs.readFile(dbPath, 'utf-8');
+        return JSON.parse(fileContent);
+    } catch (error) {
+        // If the file doesn't exist, return an empty structure
+        return { despliegues: [], programas: [], responsables: [] };
+    }
+}
 
-  return despliegues.map(d => ({
-    ...d,
-    fecha: (d.fecha as Timestamp).toDate(),
-    programa: programasMap.get(d.programaId) || { id: '', nombre: 'Desconocido' },
-    responsable: responsablesMap.get(d.responsableId) || { id: '', nombre: 'Desconocido' },
-  }));
+export async function writeDb(data: DbData): Promise<void> {
+    await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+
+const fetchWithRelations = (despliegues: Despliegue[], programas: Programa[], responsables: Responsable[]): DeploymentWithRelations[] => {
+    const programasMap = new Map(programas.map(p => [p.id, p]));
+    const responsablesMap = new Map(responsables.map(r => [r.id, r]));
+
+    return despliegues.map(d => ({
+        ...d,
+        fecha: d.fecha,
+        programa: programasMap.get(d.programaId) || { id: '', nombre: 'Desconocido' },
+        responsable: responsablesMap.get(d.responsableId) || { id: '', nombre: 'Desconocido' },
+    })).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 };
 
 export async function fetchFilteredDeployments(
@@ -67,22 +72,20 @@ export async function fetchFilteredDeployments(
 ): Promise<DeploymentWithRelations[]> {
   noStore();
   try {
-    let q = query(collection(db, 'despliegues'), orderBy('fecha', 'desc'));
+    const db = await readDb();
+    let despliegues = db.despliegues;
 
     if (entorno) {
-      q = query(q, where('entorno', '==', entorno));
+      despliegues = despliegues.filter(d => d.entorno === entorno);
     }
     if (programaId) {
-      q = query(q, where('programaId', '==', programaId));
+        despliegues = despliegues.filter(d => d.programaId === programaId);
     }
     if (responsableId) {
-      q = query(q, where('responsableId', '==', responsableId));
+        despliegues = despliegues.filter(d => d.responsableId === responsableId);
     }
     
-    const snapshot = await getDocs(q);
-    const despliegues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Despliegue));
-    
-    const deploymentsWithRelations = await fetchWithRelations(despliegues);
+    const deploymentsWithRelations = fetchWithRelations(despliegues, db.programas, db.responsables);
     
     if (queryStr) {
         return deploymentsWithRelations.filter(d => 
@@ -105,8 +108,8 @@ export async function fetchFilteredDeployments(
 export async function fetchPrograms(): Promise<Programa[]> {
   noStore();
   try {
-    const snapshot = await getDocs(collection(db, 'programas'));
-    return snapshot.docs.map(doc => ({ id: doc.id, nombre: doc.data().nombre as string }));
+    const db = await readDb();
+    return db.programas;
   } catch (e) {
     console.error('Database Error:', e);
     throw new Error('Failed to fetch programs.');
@@ -116,8 +119,8 @@ export async function fetchPrograms(): Promise<Programa[]> {
 export async function fetchResponsibles(): Promise<Responsable[]> {
     noStore();
     try {
-      const snapshot = await getDocs(collection(db, 'responsables'));
-      return snapshot.docs.map(doc => ({ id: doc.id, nombre: doc.data().nombre as string }));
+      const db = await readDb();
+      return db.responsables;
     } catch (e) {
       console.error('Database Error:', e);
       throw new Error('Failed to fetch responsibles.');
@@ -127,19 +130,25 @@ export async function fetchResponsibles(): Promise<Responsable[]> {
 export async function fetchSummary() {
     noStore();
     try {
-        const programs = await fetchPrograms();
+        const db = await readDb();
+        const { programas, despliegues } = db;
         const summary: { programaNombre: string; Preproducción: string | null, Producción: string | null }[] = [];
 
-        for(const program of programs) {
-            const preprodQuery = query(collection(db, 'despliegues'), where('programaId', '==', program.id), where('entorno', '==', 'Preproducción'), orderBy('fecha', 'desc'), limit(1));
-            const prodQuery = query(collection(db, 'despliegues'), where('programaId', '==', program.id), where('entorno', '==', 'Producción'), orderBy('fecha', 'desc'), limit(1));
+        for(const program of programas) {
+            const programDeployments = despliegues.filter(d => d.programaId === program.id);
             
-            const [preprodSnap, prodSnap] = await Promise.all([getDocs(preprodQuery), getDocs(prodQuery)]);
+            const preprodDeployments = programDeployments
+                .filter(d => d.entorno === 'Preproducción')
+                .sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+            const prodDeployments = programDeployments
+                .filter(d => d.entorno === 'Producción')
+                .sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
             summary.push({
                 programaNombre: program.nombre,
-                Preproducción: !preprodSnap.empty ? preprodSnap.docs[0].data().version : null,
-                Producción: !prodSnap.empty ? prodSnap.docs[0].data().version : null,
+                Preproducción: preprodDeployments.length > 0 ? preprodDeployments[0].version : null,
+                Producción: prodDeployments.length > 0 ? prodDeployments[0].version : null,
             });
         }
         return summary;
@@ -152,14 +161,14 @@ export async function fetchSummary() {
 export async function fetchDeploymentById(id: string): Promise<DeploymentWithRelations | null> {
     noStore();
     try {
-        const docSnap = await getDoc(doc(db, "despliegues", id));
+        const db = await readDb();
+        const deployment = db.despliegues.find(d => d.id === id);
 
-        if (!docSnap.exists()) {
+        if (!deployment) {
             return null;
         }
 
-        const deployment = { id: docSnap.id, ...docSnap.data() } as Despliegue;
-        const result = await fetchWithRelations([deployment]);
+        const result = fetchWithRelations([deployment], db.programas, db.responsables);
         return result[0];
     } catch (error) {
         console.error('Database Error:', error);
