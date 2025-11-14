@@ -8,8 +8,6 @@ import {
   getPaginationRowModel,
   SortingState,
   getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
 } from '@tanstack/react-table';
 
 import {
