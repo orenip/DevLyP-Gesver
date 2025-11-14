@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   Tooltip,
   TooltipContent,
@@ -22,34 +22,6 @@ const navLinks = [
   { href: '/deployments', icon: Package, label: 'Despliegues' },
 ];
 
-function MobileNavLink({ href, children }: { href: string; children: React.ReactNode }) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const [isPending, startTransition] = useTransition();
-
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        e.preventDefault();
-        startTransition(() => {
-            router.push(href);
-        });
-    };
-
-    return (
-        <Link
-            href={href}
-            onClick={handleClick}
-            className={cn(
-                'flex items-center gap-4 px-2.5',
-                pathname === href ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-                isPending && 'pointer-events-none'
-            )}
-        >
-            {children}
-            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-        </Link>
-    );
-}
-
 export default function MainLayout({
   children,
 }: {
@@ -57,15 +29,15 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const handleLinkClick = (href: string, callback: () => void) => {
+  const handleMobileLinkClick = (href: string) => {
     startTransition(() => {
-      callback();
+        router.push(href);
+        setOpen(false);
     });
   };
-
-  const closeSheet = () => setOpen(false);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -110,7 +82,6 @@ export default function MainLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs">
-              <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
                   href="#"
@@ -120,10 +91,21 @@ export default function MainLayout({
                   <span className="sr-only">Deployment Tracker</span>
                 </Link>
                  {navLinks.map(({ href, icon: Icon, label }) => (
-                  <MobileNavLink key={href} href={href}>
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleMobileLinkClick(href);
+                    }}
+                    className={cn(
+                        'flex items-center gap-4 px-2.5',
+                        pathname === href ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
                     <Icon className="h-5 w-5" />
                     {label}
-                  </MobileNavLink>
+                  </Link>
                 ))}
               </nav>
             </SheetContent>
