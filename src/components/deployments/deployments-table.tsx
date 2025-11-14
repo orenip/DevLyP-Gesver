@@ -8,12 +8,13 @@ import {
 import { DataTable } from '@/components/deployments/data-table';
 import { columns } from '@/components/deployments/columns';
 import { Button } from '../ui/button';
-import { PlusCircle } from 'lucide-react';
+import { FileDown, PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
-import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { DeploymentWithRelations, fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
 import { Suspense } from 'react';
 import { TableSkeleton } from '../skeletons';
 import Link from 'next/link';
+import { ExportButton } from './export-button';
 
 interface DeploymentsTableProps {
   query: string;
@@ -33,14 +34,24 @@ export function DeploymentsTable({ query, entorno, programaId, responsableId }: 
               Gestiona los despliegues de tus aplicaciones.
             </CardDescription>
           </div>
-          <Link href="/deployments/new">
-            <Button size="sm" className="gap-1 w-full sm:w-auto">
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Añadir Despliegue
-              </span>
-            </Button>
-          </Link>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Suspense fallback={null}>
+              <ExportButtonWrapper
+                  query={query}
+                  entorno={entorno}
+                  programaId={programaId}
+                  responsableId={responsableId}
+                />
+            </Suspense>
+            <Link href="/deployments/new" className="w-full sm:w-auto">
+              <Button size="sm" className="gap-1 w-full">
+                <PlusCircle className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Añadir Despliegue
+                </span>
+              </Button>
+            </Link>
+          </div>
         </div>
         <Suspense fallback={null}>
           <FiltersWrapper />
@@ -66,6 +77,11 @@ async function FiltersWrapper() {
     fetchResponsibles(),
   ]);
   return <Filters programs={programs} responsibles={responsibles} />;
+}
+
+async function ExportButtonWrapper(props: DeploymentsTableProps) {
+  const deployments = await fetchFilteredDeployments(props.query, props.entorno, props.programaId, props.responsableId);
+  return <ExportButton deployments={deployments} />;
 }
 
 async function DeploymentsData({ query, entorno, programaId, responsableId }: DeploymentsTableProps) {
