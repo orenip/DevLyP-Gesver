@@ -13,7 +13,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import { saveDeployment, updateDeployment } from '@/lib/actions';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CreatableCombobox } from '../ui/creatable-combobox';
 import { useToast } from '@/hooks/use-toast';
-import { DeploymentWithRelations, Plataforma, Programa, Responsable } from '@/lib/data';
+import type { DeploymentWithRelations, Plataforma, Programa, Responsable } from '@/lib/repository';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { Switch } from '../ui/switch';

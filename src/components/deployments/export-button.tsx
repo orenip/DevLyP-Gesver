@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { DeploymentWithRelations } from '@/lib/data';
+import type { DeploymentWithRelations } from '@/lib/repository';
 import { FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 

@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { readDb, writeDb, Despliegue, Programa, Responsable, Plataforma } from './data';
-import { randomUUID } from 'crypto';
+import { repository } from './repository';
 
 const FormSchema = z.object({
   id: z.string().optional(),
@@ -20,24 +19,6 @@ const FormSchema = z.object({
   port: z.string().optional(),
 });
 
-const getOrCreate = async (collectionName: 'programas' | 'responsables' | 'plataformas', name: string) => {
-    const db = await readDb();
-    let collection: (Programa[] | Responsable[] | Plataforma[]) = db[collectionName] || [];
-    
-    let item = collection.find(p => p.nombre.toLowerCase() === name.toLowerCase());
-
-    if (!item) {
-        const newItem = { id: randomUUID(), nombre: name };
-        if (!db[collectionName]) {
-          db[collectionName] = [];
-        }
-        (db[collectionName] as any[]).push(newItem);
-        await writeDb(db);
-        return newItem.id;
-    }
-    return item.id;
-};
-
 const handleDeployment = async (formData: FormData, id?: string) => {
   const rawData = Object.fromEntries(formData.entries());
   const validatedFields = FormSchema.safeParse(rawData);
@@ -52,47 +33,27 @@ const handleDeployment = async (formData: FormData, id?: string) => {
   const { fecha, programa, responsable, plataforma, hasSwagger, ...deploymentData } = validatedFields.data;
 
   try {
-    const programaId = await getOrCreate('programas', programa);
-    const responsableId = await getOrCreate('responsables', responsable);
-    const plataformaId = await getOrCreate('plataformas', plataforma);
-
-    const db = await readDb();
-
-    // We store the name of the platform directly in the deployment
-    const plataformaNombre = db.plataformas.find(p => p.id === plataformaId)?.nombre || plataforma;
+    const deploymentPayload = {
+      ...deploymentData,
+      fecha: new Date(fecha).toISOString(),
+      hasSwagger: hasSwagger === 'on',
+    }
 
     if (id) {
-        // Update
-        const deploymentIndex = db.despliegues.findIndex(d => d.id === id);
-        if (deploymentIndex === -1) {
-            return { message: 'Error: Despliegue no encontrado.' };
-        }
-        
-        db.despliegues[deploymentIndex] = {
-            ...db.despliegues[deploymentIndex],
-            ...deploymentData,
-            fecha: new Date(fecha).toISOString(),
-            programaId,
-            responsableId,
-            plataforma: plataformaNombre,
-            hasSwagger: hasSwagger === 'on',
-        };
+        await repository.updateDeployment(id, {
+            ...deploymentPayload,
+            programa,
+            responsable,
+            plataforma,
+        });
     } else {
-        // Create
-        const newDeployment: Despliegue = {
-            id: randomUUID(),
-            ...deploymentData,
-            fecha: new Date(fecha).toISOString(),
-            programaId: programaId,
-            responsableId: responsableId,
-            plataforma: plataformaNombre,
-            hasSwagger: hasSwagger === 'on',
-        };
-        db.despliegues.push(newDeployment);
+        await repository.createDeployment({
+            ...deploymentPayload,
+            programa,
+            responsable,
+            plataforma,
+        });
     }
-    
-    await writeDb(db);
-
   } catch (error) {
     console.error(error);
     return { message: 'Error de base de datos.' };
@@ -115,10 +76,7 @@ export async function updateDeployment(id: string, formData: FormData) {
 
 export async function deleteDeployment(id: string) {
   try {
-    const db = await readDb();
-    db.despliegues = db.despliegues.filter(d => d.id !== id);
-    await writeDb(db);
-
+    await repository.deleteDeployment(id);
     revalidatePath('/deployments');
     revalidatePath('/');
     return { message: 'Despliegue eliminado.' };

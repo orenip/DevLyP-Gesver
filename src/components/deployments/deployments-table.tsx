@@ -8,9 +8,9 @@ import {
 import { DataTable } from '@/components/deployments/data-table';
 import { columns } from '@/components/deployments/columns';
 import { Button } from '../ui/button';
-import { FileDown, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
-import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { repository } from '@/lib/repository';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ExportButton } from './export-button';
@@ -73,18 +73,18 @@ export function DeploymentsTable({ query, entorno, programaId, responsableId }: 
 
 async function FiltersWrapper() {
   const [programs, responsibles] = await Promise.all([
-    fetchPrograms(),
-    fetchResponsibles(),
+    repository.getPrograms(),
+    repository.getResponsibles(),
   ]);
   return <Filters programs={programs} responsibles={responsibles} />;
 }
 
 async function ExportButtonWrapper(props: DeploymentsTableProps) {
-  const deployments = await fetchFilteredDeployments(props.query, props.entorno, props.programaId, props.responsableId);
+  const deployments = await repository.getFilteredDeployments(props.query, props.entorno, props.programaId, props.responsableId);
   return <ExportButton deployments={deployments} />;
 }
 
 async function DeploymentsData({ query, entorno, programaId, responsableId }: DeploymentsTableProps) {
-  const deployments = await fetchFilteredDeployments(query, entorno, programaId, responsableId);
+  const deployments = await repository.getFilteredDeployments(query, entorno, programaId, responsableId);
   return <DataTable columns={columns} data={deployments} />;
 }

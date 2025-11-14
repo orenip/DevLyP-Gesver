@@ -1,10 +1,10 @@
 import { DeploymentForm } from '@/components/deployments/deployment-sheet';
-import { fetchDeploymentById } from '@/lib/data';
+import { repository } from '@/lib/repository';
 import { notFound } from 'next/navigation';
 
 export default async function EditDeploymentPage({ params }: { params: { id: string } }) {
   const id = params.id;
-  const deployment = await fetchDeploymentById(id);
+  const deployment = await repository.getDeploymentById(id);
 
   if (!deployment) {
     notFound();

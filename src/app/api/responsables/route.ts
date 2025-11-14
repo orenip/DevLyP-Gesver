@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { fetchResponsibles } from '@/lib/data';
+import { repository } from '@/lib/repository';
 
 export async function GET() {
-  const responsables = await fetchResponsibles();
+  const responsables = await repository.getResponsibles();
   return NextResponse.json(responsables);
 }

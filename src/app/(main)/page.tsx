@@ -1,6 +1,6 @@
 import { SummaryView } from '@/components/deployments/summary-view';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { fetchSummary } from '@/lib/data';
+import { repository } from '@/lib/repository';
 import { Suspense } from 'react';
 
 export default async function Home() {
@@ -16,6 +16,6 @@ export default async function Home() {
 }
 
 async function SummaryData() {
-    const summary = await fetchSummary();
+    const summary = await repository.getSummary();
     return <SummaryView summary={summary} />;
 }

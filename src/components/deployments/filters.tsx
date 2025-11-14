@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select';
-import { Programa, Responsable } from '@/lib/data';
+import type { Programa, Responsable } from '@/lib/repository';
 import {
   Collapsible,
   CollapsibleContent,
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from '../ui/button';
 import { Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
 
