@@ -31,7 +31,10 @@
       "comentario": "Jdjs",
       "fecha": "2025-11-14T09:04:21.647Z",
       "programaId": "31795ad8-e381-4742-ac0e-5889f7da039c",
-      "responsableId": "2b71ee0f-e7ca-4058-9b55-77815dbece13"
+      "responsableId": "2b71ee0f-e7ca-4058-9b55-77815dbece13",
+      "url": "Http:API.com",
+      "port": "8012",
+      "hasSwagger": false
     }
   ],
   "programas": [

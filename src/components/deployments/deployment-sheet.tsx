@@ -13,14 +13,14 @@ import {
 import { Textarea } from '../ui/textarea';
 import { saveDeployment, updateDeployment } from '@/lib/actions';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CalendarIcon, ChevronLeft } from 'lucide-react';
+import { CalendarIcon, ChevronLeft, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CreatableCombobox } from '../ui/creatable-combobox';
@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { Switch } from '../ui/switch';
+import { Skeleton } from '../ui/skeleton';
 
 
 interface DeploymentSheetProps {
@@ -42,18 +43,30 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
   const router = useRouter();
   const [hasSwagger, setHasSwagger] = useState(deployment?.hasSwagger || false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-        const [progRes, respRes] = await Promise.all([
-            fetch('/api/programas'),
-            fetch('/api/responsables'),
-        ]);
-        if (progRes.ok) setPrograms(await progRes.json());
-        if (respRes.ok) setResponsibles(await respRes.json());
+        setIsLoading(true);
+        try {
+            const [progRes, respRes] = await Promise.all([
+                fetch('/api/programas'),
+                fetch('/api/responsables'),
+            ]);
+            if (progRes.ok) setPrograms(await progRes.json());
+            if (respRes.ok) setResponsibles(await respRes.json());
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error de carga',
+                description: 'No se pudieron cargar los programas y responsables.'
+            })
+        } finally {
+            setIsLoading(false);
+        }
     }
     fetchData();
-  }, []);
+  }, [toast]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -81,6 +94,10 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const programOptions = programs.map(p => ({ value: p.nombre, label: p.nombre }));
   const responsibleOptions = responsibles.map(r => ({ value: r.nombre, label: r.nombre }));
   const title = deployment ? 'Editar Despliegue' : 'Añadir Nuevo Despliegue';
+
+  if (isLoading) {
+    return <DeploymentFormSkeleton title={title} />;
+  }
 
   return (
     <Card>
@@ -168,10 +185,51 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   );
 }
 
+function DeploymentFormSkeleton({ title }: { title: string }) {
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <Skeleton className="h-7 w-64" />
+                </div>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="space-y-2">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ))}
+                    <div className="space-y-2 md:col-span-2">
+                         <Skeleton className="h-4 w-20" />
+                         <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                         <Skeleton className="h-4 w-20" />
+                         <Skeleton className="h-20 w-full" />
+                    </div>
+                     {[...Array(3)].map((_, i) => (
+                        <div key={i} className="space-y-2">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ))}
+                </div>
+                 <div className="flex justify-end">
+                    <Skeleton className="h-10 w-32" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" form="deployment-form" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       {pending ? 'Guardando...' : 'Guardar Cambios'}
     </Button>
   );
