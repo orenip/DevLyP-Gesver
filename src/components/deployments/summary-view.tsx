@@ -46,7 +46,7 @@ export function SummaryView({ summary }: SummaryViewProps) {
                 v{deployment.version}
               </Badge>
             </div>
-            <div className="text-xs text-muted-foreground space-y-2 flex-grow flex flex-col justify-end">
+            <div className="text-xs text-muted-foreground space-y-2 flex-grow">
               <div className="flex items-center gap-2">
                 <User className="w-3.5 h-3.5" />
                 <span>{deployment.responsable.nombre}</span>
