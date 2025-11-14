@@ -29,6 +29,7 @@ import { DeploymentWithRelations, Programa, Responsable } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
+import { Switch } from '../ui/switch';
 
 
 interface DeploymentSheetProps {
@@ -40,6 +41,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const [programs, setPrograms] = useState<Programa[]>([]);
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
   const router = useRouter();
+  const [hasSwagger, setHasSwagger] = useState(deployment?.hasSwagger || false);
 
   useEffect(() => {
     async function fetchData() {
@@ -135,14 +137,30 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
                         <Label htmlFor="accion">Acción</Label>
                         <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="responsable">Responsable</Label>
                         <CreatableCombobox name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona o crea responsable..." />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="comentario">Comentario</Label>
                         <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
                     </div>
+                    <div className="space-y-2 flex items-center gap-2">
+                        <Switch id="has-swagger" name="hasSwagger" checked={hasSwagger} onCheckedChange={setHasSwagger} />
+                        <Label htmlFor="has-swagger" className="font-normal">¿Tiene Swagger?</Label>
+                    </div>
+                    {hasSwagger && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="swaggerUrl">URL de Swagger</Label>
+                                <Input id="swaggerUrl" name="swaggerUrl" defaultValue={deployment?.swaggerUrl || ''} placeholder="https://miapi.com/swagger" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="port">Puerto</Label>
+                                <Input id="port" name="port" type="number" defaultValue={deployment?.port || ''} placeholder="8080" />
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="flex justify-end">
                     <SubmitButton />

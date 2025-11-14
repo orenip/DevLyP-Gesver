@@ -15,6 +15,9 @@ const FormSchema = z.object({
   version: z.string().min(1, 'Versión no puede estar vacía.'),
   accion: z.string().optional(),
   comentario: z.string().optional(),
+  hasSwagger: z.string().optional(),
+  swaggerUrl: z.string().optional(),
+  port: z.string().optional(),
 });
 
 const getOrCreate = async (collectionName: 'programas' | 'responsables', name: string) => {
@@ -32,8 +35,9 @@ const getOrCreate = async (collectionName: 'programas' | 'responsables', name: s
     return item.id;
 };
 
-export async function saveDeployment(formData: FormData) {
-  const validatedFields = FormSchema.safeParse(Object.fromEntries(formData.entries()));
+const handleDeployment = async (formData: FormData, id?: string) => {
+  const rawData = Object.fromEntries(formData.entries());
+  const validatedFields = FormSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
     return {
@@ -42,7 +46,7 @@ export async function saveDeployment(formData: FormData) {
     };
   }
   
-  const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
+  const { fecha, programa, responsable, hasSwagger, ...deploymentData } = validatedFields.data;
 
   try {
     const programaId = await getOrCreate('programas', programa);
@@ -50,66 +54,53 @@ export async function saveDeployment(formData: FormData) {
 
     const db = await readDb();
 
-    const newDeployment: Despliegue = {
-        id: randomUUID(),
-        ...deploymentData,
-        fecha: new Date(fecha).toISOString(),
-        programaId: programaId,
-        responsableId: responsableId,
-    };
-    db.despliegues.push(newDeployment);
-    await writeDb(db);
-
-  } catch (error) {
-    console.error(error);
-    return { message: 'Error de base de datos: No se pudo crear el despliegue.' };
-  }
-
-  revalidatePath('/deployments');
-  revalidatePath('/');
-  return { message: 'Despliegue añadido exitosamente.' };
-}
-
-export async function updateDeployment(id: string, formData: FormData) {
-    const validatedFields = FormSchema.safeParse(Object.fromEntries(formData.entries()));
-    
-      if (!validatedFields.success) {
-        return {
-          errors: validatedFields.error.flatten().fieldErrors,
-          message: 'Error de validación.',
-        };
-      }
-
-      const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
-
-      try {
-        const programaId = await getOrCreate('programas', programa);
-        const responsableId = await getOrCreate('responsables', responsable);
-        
-        const db = await readDb();
-
+    if (id) {
+        // Update
         const deploymentIndex = db.despliegues.findIndex(d => d.id === id);
         if (deploymentIndex === -1) {
             return { message: 'Error: Despliegue no encontrado.' };
         }
-    
+        
         db.despliegues[deploymentIndex] = {
             ...db.despliegues[deploymentIndex],
             ...deploymentData,
             fecha: new Date(fecha).toISOString(),
             programaId,
-            responsableId
+            responsableId,
+            hasSwagger: hasSwagger === 'on',
         };
-        await writeDb(db);
-
-    } catch (error) {
-        console.error(error);
-        return { message: 'Error de base de datos: No se pudo actualizar el despliegue.' };
+    } else {
+        // Create
+        const newDeployment: Despliegue = {
+            id: randomUUID(),
+            ...deploymentData,
+            fecha: new Date(fecha).toISOString(),
+            programaId: programaId,
+            responsableId: responsableId,
+            hasSwagger: hasSwagger === 'on',
+        };
+        db.despliegues.push(newDeployment);
     }
+    
+    await writeDb(db);
 
-    revalidatePath('/deployments');
-    revalidatePath('/');
-    return { message: 'Despliegue actualizado exitosamente.' };
+  } catch (error) {
+    console.error(error);
+    return { message: 'Error de base de datos.' };
+  }
+
+  revalidatePath('/deployments');
+  revalidatePath('/');
+  return { message: id ? 'Despliegue actualizado exitosamente.' : 'Despliegue añadido exitosamente.' };
+}
+
+
+export async function saveDeployment(formData: FormData) {
+    return handleDeployment(formData);
+}
+
+export async function updateDeployment(id: string, formData: FormData) {
+    return handleDeployment(formData, id);
 }
 
 

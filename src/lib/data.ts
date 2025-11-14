@@ -22,6 +22,9 @@ export interface Despliegue {
   accion?: string;
   responsableId: string;
   comentario?: string;
+  hasSwagger?: boolean;
+  swaggerUrl?: string;
+  port?: string;
 }
 
 export type DeploymentWithRelations = Omit<Despliegue, 'programaId' | 'responsableId'> & {
@@ -38,6 +41,7 @@ interface DbData {
 const dbPath = path.join(process.cwd(), 'data', 'db.json');
 
 export async function readDb(): Promise<DbData> {
+    noStore();
     try {
         const fileContent = await fs.readFile(dbPath, 'utf-8');
         return JSON.parse(fileContent);
@@ -127,15 +131,24 @@ export async function fetchResponsibles(): Promise<Responsable[]> {
     }
 }
 
-export async function fetchSummary() {
+export type SummaryItem = {
+    programaNombre: string;
+    Preproducción: DeploymentWithRelations | null;
+    Producción: DeploymentWithRelations | null;
+}
+
+export async function fetchSummary(): Promise<SummaryItem[]> {
     noStore();
     try {
         const db = await readDb();
         const { programas, despliegues } = db;
-        const summary: { programaNombre: string; Preproducción: string | null, Producción: string | null }[] = [];
+        
+        const summary: SummaryItem[] = [];
+
+        const deploymentsWithRelations = fetchWithRelations(despliegues, programas, db.responsables);
 
         for(const program of programas) {
-            const programDeployments = despliegues.filter(d => d.programaId === program.id);
+            const programDeployments = deploymentsWithRelations.filter(d => d.programa.id === program.id);
             
             const preprodDeployments = programDeployments
                 .filter(d => d.entorno === 'Preproducción')
@@ -147,8 +160,8 @@ export async function fetchSummary() {
 
             summary.push({
                 programaNombre: program.nombre,
-                Preproducción: preprodDeployments.length > 0 ? preprodDeployments[0].version : null,
-                Producción: prodDeployments.length > 0 ? prodDeployments[0].version : null,
+                Preproducción: preprodDeployments.length > 0 ? preprodDeployments[0] : null,
+                Producción: prodDeployments.length > 0 ? prodDeployments[0] : null,
             });
         }
         return summary;
