@@ -11,16 +11,18 @@ import { DeploymentSheet } from './deployment-sheet';
 import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
-import { DeploymentWithRelations, Programa, Responsable } from '@/lib/data';
-
+import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
+import { Suspense } from 'react';
+import { TableSkeleton } from '../skeletons';
 
 interface DeploymentsTableProps {
-  deployments: DeploymentWithRelations[];
-  programs: Programa[];
-  responsibles: Responsable[];
+  query: string;
+  entorno: string;
+  programaId?: string;
+  responsableId?: string;
 }
 
-export function DeploymentsTable({ deployments, programs, responsibles }: DeploymentsTableProps) {
+export function DeploymentsTable({ query, entorno, programaId, responsableId }: DeploymentsTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -40,11 +42,31 @@ export function DeploymentsTable({ deployments, programs, responsibles }: Deploy
             </Button>
           </DeploymentSheet>
         </div>
-        <Filters programs={programs} responsibles={responsibles} />
+        <Suspense fallback={null}>
+          <FiltersWrapper />
+        </Suspense>
       </CardHeader>
       <CardContent>
-        <DataTable columns={columns} data={deployments} />
+        <Suspense fallback={<TableSkeleton />}>
+          <DeploymentsData
+            query={query}
+            entorno={entorno}
+            programaId={programaId}
+            responsableId={responsableId}
+          />
+        </Suspense>
       </CardContent>
     </Card>
   );
+}
+
+async function FiltersWrapper() {
+  const programs = await fetchPrograms();
+  const responsibles = await fetchResponsibles();
+  return <Filters programs={programs} responsibles={responsibles} />;
+}
+
+async function DeploymentsData({ query, entorno, programaId, responsableId }: DeploymentsTableProps) {
+  const deployments = await fetchFilteredDeployments(query, entorno, programaId, responsableId);
+  return <DataTable columns={columns} data={deployments} />;
 }
