@@ -11,10 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DeploymentSheet } from './deployment-sheet';
 import { DeleteDialog } from './delete-dialog';
 import { DeploymentWithRelations } from '@/lib/data';
 import { Badge } from '../ui/badge';
+import Link from 'next/link';
 
 
 export const columns: ColumnDef<DeploymentWithRelations>[] = [
@@ -69,9 +69,9 @@ export const columns: ColumnDef<DeploymentWithRelations>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DeploymentSheet deployment={deployment}>
+              <Link href={`/deployments/${deployment.id}/edit`}>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Editar</DropdownMenuItem>
-              </DeploymentSheet>
+              </Link>
               <DropdownMenuSeparator />
               <DeleteDialog deploymentId={deployment.id}>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600 focus:bg-red-50">Eliminar</DropdownMenuItem>

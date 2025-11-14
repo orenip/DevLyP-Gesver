@@ -11,6 +11,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { deleteDeployment } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface DeleteDialogProps {
   children: React.ReactNode;
@@ -18,9 +19,15 @@ interface DeleteDialogProps {
 }
 
 export function DeleteDialog({ children, deploymentId }: DeleteDialogProps) {
-
+  const { toast } = useToast();
   const handleDelete = async () => {
-    await deleteDeployment(deploymentId);
+    const result = await deleteDeployment(deploymentId);
+    if (result.message) {
+        toast({
+            title: 'Despliegue Eliminado',
+            description: result.message,
+        })
+    }
   };
 
   return (

@@ -7,13 +7,13 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/deployments/data-table';
 import { columns } from '@/components/deployments/columns';
-import { DeploymentSheet } from './deployment-sheet';
 import { Button } from '../ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Filters } from './filters';
 import { fetchFilteredDeployments, fetchPrograms, fetchResponsibles } from '@/lib/data';
 import { Suspense } from 'react';
 import { TableSkeleton } from '../skeletons';
+import Link from 'next/link';
 
 interface DeploymentsTableProps {
   query: string;
@@ -33,14 +33,14 @@ export function DeploymentsTable({ query, entorno, programaId, responsableId }: 
               Gestiona los despliegues de tus aplicaciones.
             </CardDescription>
           </div>
-          <DeploymentSheet>
+          <Link href="/deployments/new">
             <Button size="sm" className="gap-1 w-full sm:w-auto">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Añadir Despliegue
               </span>
             </Button>
-          </DeploymentSheet>
+          </Link>
         </div>
         <Suspense fallback={null}>
           <FiltersWrapper />

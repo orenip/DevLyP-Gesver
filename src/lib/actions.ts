@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { readDb, writeDb, Despliegue } from './data';
+import { readDb, writeDb, Despliegue, Programa, Responsable } from './data';
 import { randomUUID } from 'crypto';
 
 const FormSchema = z.object({
@@ -19,14 +19,15 @@ const FormSchema = z.object({
 
 const getOrCreate = async (collectionName: 'programas' | 'responsables', name: string) => {
     const db = await readDb();
-    const collection = db[collectionName];
+    let collection: (Programa[] | Responsable[]) = db[collectionName];
+    
     let item = collection.find(p => p.nombre.toLowerCase() === name.toLowerCase());
 
     if (!item) {
-        item = { id: randomUUID(), nombre: name };
-        // @ts-ignore
-        db[collectionName].push(item);
+        const newItem = { id: randomUUID(), nombre: name };
+        (db[collectionName] as any[]).push(newItem);
         await writeDb(db);
+        return newItem.id;
     }
     return item.id;
 };
@@ -44,9 +45,10 @@ export async function saveDeployment(formData: FormData) {
   const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
   try {
-    const db = await readDb();
     const programaId = await getOrCreate('programas', programa);
     const responsableId = await getOrCreate('responsables', responsable);
+
+    const db = await readDb();
 
     const newDeployment: Despliegue = {
         id: randomUUID(),
@@ -81,9 +83,10 @@ export async function updateDeployment(id: string, formData: FormData) {
       const { fecha, programa, responsable, ...deploymentData } = validatedFields.data;
 
       try {
-        const db = await readDb();
         const programaId = await getOrCreate('programas', programa);
         const responsableId = await getOrCreate('responsables', responsable);
+        
+        const db = await readDb();
 
         const deploymentIndex = db.despliegues.findIndex(d => d.id === id);
         if (deploymentIndex === -1) {

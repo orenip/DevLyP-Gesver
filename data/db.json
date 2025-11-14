@@ -1,5 +1,17 @@
 {
-  "despliegues": [],
+  "despliegues": [
+    {
+      "id": "1bf21c31-f0fd-4a0f-99e2-31a58deb5073",
+      "entorno": "Preproducción",
+      "plataforma": "IIS",
+      "version": "1",
+      "accion": "Cr",
+      "comentario": "Fsf\r\n",
+      "fecha": "2025-11-14T08:55:40.021Z",
+      "programaId": "a32bff56-1db9-476c-aef9-f39dcc25274c",
+      "responsableId": "04e135dc-8654-4956-a98c-0664d12a8ff5"
+    }
+  ],
   "programas": [],
   "responsables": []
 }
