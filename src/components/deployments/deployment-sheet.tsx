@@ -78,6 +78,10 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   } : {
       fecha: new Date(),
       entorno: 'Preproducción',
+      programa: '',
+      responsable: '',
+      version: '',
+      plataforma: '',
       hasSwagger: false,
       accion: '',
       comentario: '',
