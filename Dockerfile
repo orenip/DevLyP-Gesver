@@ -23,13 +23,16 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-
+# Copia el directorio 'app' que contiene los archivos estáticos de Next.js
+COPY src/app/favicon.ico ./app/favicon.ico
+COPY src/app/globals.css ./app/globals.css
+# Si tienes más archivos estáticos directamente en 'src/app', añádelos aquí
+# O copia toda la carpeta 'src' y luego ajusta las rutas de trabajo si es más fácil.
 # Puedes configurar un usuario no-root por razones de seguridad
 # RUN addgroup --system --gid 1001 nodejs
 # RUN adduser --system --uid 1001 nextjs
 # USER nextjs
 
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json

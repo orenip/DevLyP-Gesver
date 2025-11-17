@@ -1,70 +1,372 @@
 import 'server-only';
-import mysql from 'mysql2/promise';
+import mysql, { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
+import { unstable_noStore as noStore } from 'next/cache';
 import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Programa, Responsable, Plataforma } from '.';
 
-// Configuración de la conexión a la base de datos usando variables de entorno
+// --- CONFIGURACIÓN DE CONEXIÓN ---
 const connectionConfig = {
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
+    host: process.env.DATABASE_HOST,
+    user: process.env.DATABASE_USER,
+    password: process.env.DATABASE_PASSWORD,
+    database: process.env.DATABASE_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
 };
 
-// --- INICIO: LÓGICA DE CONEXIÓN Y EJECUCIÓN DE QUERIES (EJEMPLO) ---
-// Esta es una implementación de ejemplo. Deberías añadir manejo de errores y un pool de conexiones para producción.
-async function getConnection() {
-  const connection = await mysql.createConnection(connectionConfig);
-  return connection;
+// Usamos un Pool para mejor rendimiento y manejo de conexiones
+const pool = mysql.createPool(connectionConfig);
+
+async function getDbConnection() {
+    return pool.getConnection();
 }
-// --- FIN: LÓGICA DE CONEXIÓN ---
 
+// --- FUNCIONES DE SOPORTE ---
 
-// NOTA: Esta es una estructura de ejemplo. Deberás implementar las consultas SQL correspondientes.
+/**
+ * Formatea una cadena de fecha ISO a 'YYYY-MM-DD HH:MM:SS' para compatibilidad con MySQL DATETIME.
+ */
+function getFormattedDate(dateString: string): string {
+    return new Date(dateString).toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/**
+ * Busca un registro por nombre usando la conexión proporcionada. Si no existe, lo crea y devuelve el ID.
+ */
+async function getOrCreateRelationId(db: PoolConnection, table: string, name: string): Promise<string> {
+    try {
+        // 1. Buscar
+        const [rows] = await db.query<RowDataPacket[]>(`SELECT id FROM ${table} WHERE nombre = ?`, [name]);
+        if (rows.length > 0) {
+            return rows[0].id.toString();
+        }
+
+        // 2. Crear
+        const [result] = await db.query<ResultSetHeader>(`INSERT INTO ${table} (nombre) VALUES (?)`, [name]);
+        return result.insertId.toString();
+
+    } catch (error) {
+        console.error(`Database Error in getOrCreateRelationId (${table}):`, error);
+        throw new Error(`Failed to get or create ${table} entry.`);
+    }
+}
+
+/**
+ * Mapea una fila de resultados SQL a la estructura DeploymentWithRelations.
+ */
+const mapRowToDeployment = (row: any): DeploymentWithRelations => ({
+    id: row.id.toString(),
+    fecha: new Date(row.fecha).toISOString(),
+    entorno: row.entorno,
+    plataforma: row.plataforma,
+    version: row.version,
+    accion: row.accion,
+    comentario: row.comentario,
+    hasSwagger: Boolean(row.hasSwagger),
+    url: row.url,
+    port: row.port,
+    programa: { id: row.programaId.toString(), nombre: row.programaNombre },
+    responsable: { id: row.responsableId.toString(), nombre: row.responsableNombre },
+});
+
+const BASE_SELECT = `
+    SELECT
+        d.id, d.fecha, d.entorno, d.plataforma, d.version, d.accion, d.comentario, d.hasSwagger, d.url, d.port,
+        p.id AS programaId, p.nombre AS programaNombre,
+        r.id AS responsableId, r.nombre AS responsableNombre
+    FROM despliegues d
+    JOIN programas p ON d.programaId = p.id
+    JOIN responsables r ON d.responsableId = r.id
+`;
+
+// --- IMPLEMENTACIÓN DEL REPOSITORIO ---
 export const mysqlRepository: IRepository = {
-    async getFilteredDeployments(query: string, entorno: string, programaId?: string, responsableId?: string): Promise<DeploymentWithRelations[]> {
-        console.log("Obteniendo despliegues desde MySQL...");
-        // const db = await getConnection();
-        // Lógica SQL para filtrar y obtener despliegues con sus relaciones.
-        // Ejemplo: SELECT * FROM despliegues d JOIN programas p ON d.programaId = p.id ...
-        // await db.end();
-        return [];
-    },
-    async getDeploymentById(id: string): Promise<DeploymentWithRelations | null> {
-        console.log(`Obteniendo despliegue ${id} desde MySQL...`);
-        // Lógica SQL para obtener un despliegue por ID.
-        return null;
-    },
+    // ----------------------------------------------------
+    //  LECTURA DE RELACIONES
+    // ----------------------------------------------------
     async getPrograms(): Promise<Programa[]> {
-        console.log("Obteniendo programas desde MySQL...");
-        // Lógica SQL para obtener todos los programas.
-        return [];
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(`SELECT id, nombre FROM programas ORDER BY nombre ASC`);
+            return rows.map(row => ({ id: row.id.toString(), nombre: row.nombre }));
+        } catch (e) {
+            console.error('Database Error (getPrograms):', e);
+            throw new Error('Failed to fetch programs.');
+        } finally {
+            db.release();
+        }
     },
     async getResponsibles(): Promise<Responsable[]> {
-        console.log("Obteniendo responsables desde MySQL...");
-        // Lógica SQL para obtener todos los responsables.
-        return [];
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(`SELECT id, nombre FROM responsables ORDER BY nombre ASC`);
+            return rows.map(row => ({ id: row.id.toString(), nombre: row.nombre }));
+        } catch (e) {
+            console.error('Database Error (getResponsibles):', e);
+            throw new Error('Failed to fetch responsibles.');
+        } finally {
+            db.release();
+        }
     },
     async getPlatforms(): Promise<Plataforma[]> {
-        console.log("Obteniendo plataformas desde MySQL...");
-        // Lógica SQL para obtener todas las plataformas.
-        return [];
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(`SELECT id, nombre FROM plataformas ORDER BY nombre ASC`);
+            return rows.map(row => ({ id: row.id.toString(), nombre: row.nombre }));
+        } catch (e) {
+            console.error('Database Error (getPlatforms):', e);
+            throw new Error('Failed to fetch platforms.');
+        } finally {
+            db.release();
+        }
     },
-    async getSummary(): Promise<SummaryItem[]> {
-        console.log("Obteniendo resumen desde MySQL...");
-        // Lógica SQL compleja para generar el resumen.
-        return [];
-    },
+
+    // ----------------------------------------------------
+    //  CREACIÓN DE DESPLIEGUE (TRANSACCIONAL)
+    // ----------------------------------------------------
     async createDeployment(payload: CreateDeploymentPayload): Promise<void> {
-        console.log("Creando despliegue en MySQL...", payload);
-        // Lógica SQL para manejar la creación de programas/responsables si no existen (getOrCreate)
-        // y luego insertar el nuevo despliegue.
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.beginTransaction(); // Iniciar transacción
+
+            // 1. Obtener/Crear IDs de relaciones (dentro de la transacción)
+            const programaId = await getOrCreateRelationId(db, 'programas', payload.programa);
+            const responsableId = await getOrCreateRelationId(db, 'responsables', payload.responsable);
+            await getOrCreateRelationId(db, 'plataformas', payload.plataforma);
+
+            // 2. Preparar datos y formatear fecha
+            const formattedDate = getFormattedDate(payload.fecha);
+            
+            const sql = `
+                INSERT INTO despliegues (
+                    fecha, programaId, responsableId, entorno, plataforma, version, accion, comentario, hasSwagger, url, port
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            const values = [
+                formattedDate, // Fecha formateada
+                programaId,
+                responsableId,
+                payload.entorno,
+                payload.plataforma,
+                payload.version,
+                payload.accion || null,
+                payload.comentario || null,
+                payload.hasSwagger ? 1 : 0,
+                payload.url || null,
+                payload.port || null,
+            ];
+
+            // 3. Insertar Despliegue
+            await db.execute(sql, values);
+
+            await db.commit(); // Confirmar la transacción
+
+        } catch (error) {
+            await db.rollback(); // Deshacer si algo falla
+            console.error('Database Error (createDeployment):', error);
+            throw new Error('Failed to create deployment.');
+        } finally {
+            db.release();
+        }
     },
+
+    // ----------------------------------------------------
+    //  ACTUALIZACIÓN DE DESPLIEGUE (TRANSACCIONAL)
+    // ----------------------------------------------------
     async updateDeployment(id: string, payload: UpdateDeploymentPayload): Promise<void> {
-        console.log(`Actualizando despliegue ${id} en MySQL...`, payload);
-        // Lógica SQL para actualizar un despliegue.
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.beginTransaction(); // Iniciar transacción
+
+            // 1. Obtener/Crear IDs de relaciones (dentro de la transacción)
+            const programaId = await getOrCreateRelationId(db, 'programas', payload.programa);
+            const responsableId = await getOrCreateRelationId(db, 'responsables', payload.responsable);
+            await getOrCreateRelationId(db, 'plataformas', payload.plataforma);
+
+            // 2. Preparar datos y formatear fecha
+            const formattedDate = getFormattedDate(payload.fecha);
+
+            const sql = `
+                UPDATE despliegues SET
+                    fecha = ?, programaId = ?, responsableId = ?, entorno = ?, plataforma = ?,
+                    version = ?, accion = ?, comentario = ?, hasSwagger = ?, url = ?, port = ?
+                WHERE id = ?
+            `;
+            const values = [
+                formattedDate, // Fecha formateada
+                programaId,
+                responsableId,
+                payload.entorno,
+                payload.plataforma,
+                payload.version,
+                payload.accion || null,
+                payload.comentario || null,
+                payload.hasSwagger ? 1 : 0,
+                payload.url || null,
+                payload.port || null,
+                id,
+            ];
+
+            const [result] = await db.execute<ResultSetHeader>(sql, values);
+            if (result.affectedRows === 0) {
+                 throw new Error('Deployment not found for update, rolling back.');
+            }
+
+            await db.commit(); // Confirmar la transacción
+
+        } catch (error) {
+            await db.rollback(); // Deshacer si algo falla
+            console.error(`Database Error (updateDeployment ${id}):`, error);
+            throw new Error('Failed to update deployment.');
+        } finally {
+            db.release();
+        }
     },
+
+    // ----------------------------------------------------
+    //  ELIMINACIÓN DE DESPLIEGUE
+    // ----------------------------------------------------
     async deleteDeployment(id: string): Promise<void> {
-        console.log(`Eliminando despliegue ${id} de MySQL...`);
-        // Lógica SQL para eliminar un despliegue.
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [result] = await db.execute<ResultSetHeader>(`DELETE FROM despliegues WHERE id = ?`, [id]);
+            if (result.affectedRows === 0) {
+                 throw new Error('Deployment not found for deletion.');
+            }
+        } catch (error) {
+            console.error(`Database Error (deleteDeployment ${id}):`, error);
+            throw new Error('Failed to delete deployment.');
+        } finally {
+            db.release();
+        }
+    },
+
+    // ----------------------------------------------------
+    //  OBTENER DESPLIEGUES FILTRADOS
+    // ----------------------------------------------------
+    async getFilteredDeployments(queryStr: string, entorno: string, programaId?: string, responsableId?: string): Promise<DeploymentWithRelations[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const conditions: string[] = [];
+            const values: (string | number)[] = [];
+
+            if (entorno) {
+                conditions.push(`d.entorno = ?`);
+                values.push(entorno);
+            }
+            if (programaId) {
+                conditions.push(`d.programaId = ?`);
+                values.push(programaId);
+            }
+            if (responsableId) {
+                conditions.push(`d.responsableId = ?`);
+                values.push(responsableId);
+            }
+            if (queryStr) {
+                const searchPattern = `%${queryStr}%`;
+                conditions.push(`
+                    (p.nombre LIKE ? OR d.version LIKE ? OR r.nombre LIKE ? OR d.comentario LIKE ? OR d.accion LIKE ?)
+                `);
+                values.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+            }
+
+            const WHERE_CLAUSE = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+            const ORDER_CLAUSE = `ORDER BY d.fecha DESC`;
+
+            const sql = `${BASE_SELECT} ${WHERE_CLAUSE} ${ORDER_CLAUSE}`;
+
+            const [rows] = await db.query<RowDataPacket[]>(sql, values);
+            return rows.map(mapRowToDeployment);
+
+        } catch (e) {
+            console.error('Database Error (getFilteredDeployments):', e);
+            throw new Error('Failed to fetch filtered deployments.');
+        } finally {
+            db.release();
+        }
+    },
+    
+    // ----------------------------------------------------
+    //  OBTENER DESPLIEGUE POR ID
+    // ----------------------------------------------------
+    async getDeploymentById(id: string): Promise<DeploymentWithRelations | null> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const sql = `${BASE_SELECT} WHERE d.id = ?`;
+            const [rows] = await db.query<RowDataPacket[]>(sql, [id]);
+
+            if (rows.length === 0) {
+                return null;
+            }
+            return mapRowToDeployment(rows[0]);
+        } catch (error) {
+            console.error('Database Error (getDeploymentById):', error);
+            throw new Error('Failed to fetch deployment.');
+        } finally {
+            db.release();
+        }
+    },
+
+    // ----------------------------------------------------
+    //  OBTENER RESUMEN (Último despliegue por Programa y Entorno)
+    // ----------------------------------------------------
+    async getSummary(): Promise<SummaryItem[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            // Paso 1: Obtener todos los programas
+            const programs = await this.getPrograms();
+            
+            // Paso 2: Usar función de ventana para obtener el último despliegue por grupo (programa/entorno)
+            const latestDeploymentsSql = `
+                WITH RankedDeployments AS (
+                    SELECT 
+                        d.id, d.fecha, d.entorno, d.programaId, 
+                        ROW_NUMBER() OVER(PARTITION BY d.programaId, d.entorno ORDER BY d.fecha DESC) as rn
+                    FROM despliegues d
+                )
+                SELECT rd.id FROM RankedDeployments rd WHERE rd.rn = 1
+            `;
+
+            // Paso 3: Obtener los datos completos de esos últimos despliegues con relaciones
+            const sql = `${BASE_SELECT} WHERE d.id IN (${latestDeploymentsSql}) ORDER BY p.nombre ASC`;
+            
+            const [rows] = await db.query<RowDataPacket[]>(sql);
+            const deployments = rows.map(mapRowToDeployment);
+
+            // Paso 4: Construir el objeto SummaryItem
+            const summaryMap = new Map<string, SummaryItem>(
+                programs.map(p => [p.id, { 
+                    programaId: p.id, 
+                    programaNombre: p.nombre, 
+                    Preproducción: null, 
+                    Producción: null 
+                }])
+            );
+
+            for (const d of deployments) {
+                const summaryItem = summaryMap.get(d.programa.id);
+                if (summaryItem) {
+                    // use a type assertion to bypass the incompatible index signature
+                    (summaryItem as any)[d.entorno] = d;
+                }
+            }
+
+            return Array.from(summaryMap.values()).sort((a, b) => a.programaNombre.localeCompare(b.programaNombre));
+
+        } catch (e) {
+            console.error('Database Error (getSummary):', e);
+            throw new Error('Failed to fetch summary.');
+        } finally {
+            db.release();
+        }
     }
 };
