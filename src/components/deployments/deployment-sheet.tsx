@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,10 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
       programa: deployment.programa.nombre,
       responsable: deployment.responsable.nombre,
       hasSwagger: deployment.hasSwagger || false,
+      accion: deployment.accion || '',
+      comentario: deployment.comentario || '',
+      url: deployment.url || '',
+      port: deployment.port || '',
   } : {
       fecha: new Date(),
       entorno: 'Preproducción',
