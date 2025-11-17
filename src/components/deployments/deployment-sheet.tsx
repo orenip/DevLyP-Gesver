@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,10 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
       fecha: new Date(),
       entorno: 'Preproducción',
       hasSwagger: false,
+      accion: '',
+      comentario: '',
+      url: '',
+      port: '',
   };
 
   const form = useForm<DeploymentFormValues>({
