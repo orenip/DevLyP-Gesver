@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '../ui/textarea';
 import { saveDeployment, updateDeployment } from '@/lib/actions';
-import { useFormStatus } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -30,7 +29,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { useRouter } from 'next/navigation';
 import { Switch } from '../ui/switch';
 import { Skeleton } from '../ui/skeleton';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 
+const FormSchema = z.object({
+  fecha: z.date({ required_error: 'La fecha es obligatoria.' }),
+  programa: z.string().min(1, 'Programa no puede estar vacío.'),
+  responsable: z.string().min(1, 'Responsable no puede estar vacío.'),
+  entorno: z.enum(['Preproducción', 'Producción']),
+  plataforma: z.string().min(1, 'Plataforma no puede estar vacía.'),
+  version: z.string().min(1, 'Versión no puede estar vacía.'),
+  accion: z.string().optional(),
+  comentario: z.string().optional(),
+  hasSwagger: z.boolean().default(false),
+  url: z.string().optional(),
+  port: z.string().optional(),
+});
+
+type DeploymentFormValues = z.infer<typeof FormSchema>;
 
 interface DeploymentSheetProps {
   deployment?: DeploymentWithRelations;
@@ -42,8 +60,26 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const [responsibles, setResponsibles] = useState<Responsable[]>([]);
   const [platforms, setPlatforms] = useState<Plataforma[]>([]);
   const router = useRouter();
-  const [hasSwagger, setHasSwagger] = useState(deployment?.hasSwagger || false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const defaultValues: Partial<DeploymentFormValues> = deployment ? {
+      ...deployment,
+      fecha: deployment.fecha ? new Date(deployment.fecha) : new Date(),
+      programa: deployment.programa.nombre,
+      responsable: deployment.responsable.nombre,
+      hasSwagger: deployment.hasSwagger || false,
+  } : {
+      fecha: new Date(),
+      entorno: 'Preproducción',
+      hasSwagger: false,
+  };
+
+  const form = useForm<DeploymentFormValues>({
+    resolver: zodResolver(FormSchema),
+    defaultValues,
+    mode: 'onChange',
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -70,13 +106,24 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     fetchData();
   }, [toast]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    
+  const onSubmit = async (data: DeploymentFormValues) => {
+    setIsSubmitting(true);
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (key === 'fecha' && value instanceof Date) {
+            formData.append(key, value.toISOString());
+        } else if (typeof value === 'boolean') {
+            formData.append(key, value ? 'on' : 'off');
+        } else if (value != null) {
+            formData.append(key, String(value));
+        }
+    });
+
     const result = deployment
       ? await updateDeployment(deployment.id, formData)
       : await saveDeployment(formData);
+    
+    setIsSubmitting(false);
 
     if (result?.message) {
         toast({
@@ -87,7 +134,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     } else if (result?.errors) {
         toast({
             variant: "destructive",
-            title: 'Error de validación',
+            title: 'Error de validación del servidor',
             description: Object.values(result.errors).flat().join('\n'),
         })
     }
@@ -114,66 +161,213 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
             </div>
         </CardHeader>
         <CardContent>
-            <form id="deployment-form" onSubmit={handleSubmit} className="grid gap-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="fecha">Fecha</Label>
-                        <DatePicker defaultValue={deployment?.fecha ? new Date(deployment.fecha) : undefined} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="programa">Programa</Label>
-                        <CreatableCombobox name="programa" options={programOptions} defaultValue={deployment?.programa.nombre} placeholder="Selecciona o crea un programa..." />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="entorno">Entorno</Label>
-                        <Select name="entorno" defaultValue={deployment?.entorno || 'Preproducción'}>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un entorno" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="Preproducción">Preproducción</SelectItem>
-                            <SelectItem value="Producción">Producción</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="plataforma">Plataforma</Label>
-                        <CreatableCombobox name="plataforma" options={platformOptions} defaultValue={deployment?.plataforma} placeholder="Selecciona o crea una plataforma..." />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="version">Versión</Label>
-                        <Input id="version" name="version" defaultValue={deployment?.version} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="accion">Acción</Label>
-                        <Input id="accion" name="accion" defaultValue={deployment?.accion || ''} />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="responsable">Responsable</Label>
-                        <CreatableCombobox name="responsable" options={responsibleOptions} defaultValue={deployment?.responsable.nombre} placeholder="Selecciona o crea responsable..." />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="comentario">Comentario</Label>
-                        <Textarea id="comentario" name="comentario" defaultValue={deployment?.comentario || ''} />
-                    </div>
+            <Form {...form}>
+                <form id="deployment-form" onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="fecha"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Fecha</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        initialFocus
+                                    />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                       
+                        <FormField
+                            control={form.control}
+                            name="programa"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Programa</FormLabel>
+                                <FormControl>
+                                    <CreatableCombobox 
+                                        options={programOptions} 
+                                        placeholder="Selecciona o crea un programa..." 
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="entorno"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Entorno</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona un entorno" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Preproducción">Preproducción</SelectItem>
+                                        <SelectItem value="Producción">Producción</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="plataforma"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Plataforma</FormLabel>
+                                <FormControl>
+                                    <CreatableCombobox 
+                                        options={platformOptions} 
+                                        placeholder="Selecciona o crea una plataforma..." 
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="version"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Versión</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="accion"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Acción</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="md:col-span-2">
+                            <FormField
+                                control={form.control}
+                                name="responsable"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                    <FormLabel>Responsable</FormLabel>
+                                    <FormControl>
+                                        <CreatableCombobox 
+                                            options={responsibleOptions} 
+                                            placeholder="Selecciona o crea responsable..."
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <FormField
+                                control={form.control}
+                                name="comentario"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                    <FormLabel>Comentario</FormLabel>
+                                    <FormControl>
+                                        <Textarea {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="url">URL de Acceso</Label>
-                        <Input id="url" name="url" defaultValue={deployment?.url || ''} placeholder="https://miapi.com" />
+                         <FormField
+                            control={form.control}
+                            name="url"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>URL de Acceso</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="https://miapi.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="port"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                <FormLabel>Puerto</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="8080" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="hasSwagger"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2 flex items-center gap-2 pt-6">
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <FormLabel htmlFor="has-swagger" className="font-normal !mt-0">¿Tiene Swagger?</FormLabel>
+                                </FormItem>
+                            )}
+                        />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="port">Puerto</Label>
-                        <Input id="port" name="port" type="number" defaultValue={deployment?.port || ''} placeholder="8080" />
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={!form.formState.isValid || isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                        </Button>
                     </div>
-                    <div className="space-y-2 flex items-center gap-2 pt-6">
-                        <Switch id="has-swagger" name="hasSwagger" checked={hasSwagger} onCheckedChange={setHasSwagger} />
-                        <Label htmlFor="has-swagger" className="font-normal">¿Tiene Swagger?</Label>
-                    </div>
-                </div>
-                <div className="flex justify-end">
-                    <SubmitButton />
-                </div>
-            </form>
+                </form>
+            </Form>
         </CardContent>
     </Card>
   );
@@ -218,45 +412,3 @@ function DeploymentFormSkeleton({ title }: { title: string }) {
         </Card>
     );
 }
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" form="deployment-form" disabled={pending}>
-      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      {pending ? 'Guardando...' : 'Guardar Cambios'}
-    </Button>
-  );
-}
-
-function DatePicker({ defaultValue }: { defaultValue?: Date }) {
-    const [date, setDate] = useState<Date | undefined>(defaultValue || new Date())
-   
-    return (
-      <>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        <input type="hidden" name="fecha" value={date?.toISOString()} />
-      </>
-    )
-  }

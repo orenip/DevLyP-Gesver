@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { repository } from './repository';
 
+// This schema is now only for server-side validation, 
+// the primary validation happens on the client.
 const FormSchema = z.object({
   id: z.string().optional(),
   fecha: z.string(),
@@ -26,7 +28,7 @@ const handleDeployment = async (formData: FormData, id?: string) => {
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Error de validación.',
+      message: 'Error de validación del servidor.',
     };
   }
   
