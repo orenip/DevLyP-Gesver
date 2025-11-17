@@ -84,7 +84,7 @@ export function CreatableCombobox({ options, value, onChange, placeholder }: Com
         <Command shouldFilter={false}>
           <CommandInput 
             placeholder={placeholder || "Search option..."}
-            value={inputValue}
+            value={inputValue || ''}
             onInput={handleInputChange}
             onBlur={() => {
               const matchingOption = options.find(o => o.label.toLowerCase() === inputValue.toLowerCase());
