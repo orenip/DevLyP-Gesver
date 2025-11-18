@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Package, PanelLeft } from 'lucide-react';
+import { Home, Package, PanelLeft, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -20,6 +20,7 @@ import { Loader2 } from 'lucide-react';
 const navLinks = [
   { href: '/', icon: Home, label: 'Resumen' },
   { href: '/deployments', icon: Package, label: 'Despliegues' },
+  { href: '/ports', icon: Wifi, label: 'Puertos' },
 ];
 
 export default function MainLayout({
