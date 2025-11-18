@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS despliegues (
 
     -- Campos del despliegue
     fecha DATETIME NOT NULL,
-    entorno ENUM('Preproducción', 'Producción') NOT NULL,
+    entorno VARCHAR(50) NOT NULL,
     plataforma VARCHAR(255) NOT NULL, -- Usamos el nombre como string o el ID de la tabla 'plataformas'
     version VARCHAR(255) NOT NULL,
     

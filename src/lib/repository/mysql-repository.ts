@@ -229,17 +229,43 @@ export const mysqlRepository: IRepository = {
     },
 
     // ----------------------------------------------------
-    //  ELIMINACIÓN DE DESPLIEGUE
+    //  ELIMINACIÓN DE DESPLIEGUE CON LIMPIEZA DE HUÉRFANOS
     // ----------------------------------------------------
     async deleteDeployment(id: string): Promise<void> {
         noStore();
         const db = await getDbConnection();
         try {
-            const [result] = await db.execute<ResultSetHeader>(`DELETE FROM despliegues WHERE id = ?`, [id]);
-            if (result.affectedRows === 0) {
+            await db.beginTransaction(); // Iniciamos transacción para seguridad
+
+            // 1. Obtener el ID del programa ANTES de borrar el despliegue
+            const [rows] = await db.query<RowDataPacket[]>(
+                'SELECT programaId FROM despliegues WHERE id = ?', 
+                [id]
+            );
+
+            if (rows.length === 0) {
+                 await db.rollback();
                  throw new Error('Deployment not found for deletion.');
             }
+            const { programaId } = rows[0];
+
+            // 2. Borrar el despliegue
+            await db.execute('DELETE FROM despliegues WHERE id = ?', [id]);
+
+            // 3. Verificar si quedan otros despliegues para este programa
+            const [countResult] = await db.query<RowDataPacket[]>(
+                'SELECT COUNT(*) as total FROM despliegues WHERE programaId = ?', 
+                [programaId]
+            );
+
+            // 4. Si el contador es 0, el programa es huérfano -> Lo borramos
+            if (countResult[0].total === 0) {
+                await db.execute('DELETE FROM programas WHERE id = ?', [programaId]);
+            }
+
+            await db.commit(); // Confirmamos cambios
         } catch (error) {
+            await db.rollback(); // Si falla, deshacemos todo
             console.error(`Database Error (deleteDeployment ${id}):`, error);
             throw new Error('Failed to delete deployment.');
         } finally {
