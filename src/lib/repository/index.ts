@@ -1,5 +1,5 @@
 import { jsonRepository } from "./json-repository";
-//import { mysqlRepository } from "./mysql-repository";
+import { mysqlRepository } from "./mysql-repository";
 
 export interface Programa {
     id: string;
@@ -69,5 +69,5 @@ export interface IRepository {
 // Para cambiar entre implementaciones, simplemente cambia el objeto que se exporta.
 // Por defecto, usa el repositorio JSON.
 // Para usar MySQL, cambia `jsonRepository` por `mysqlRepository`.
-export const repository: IRepository = jsonRepository;
-//export const repository: IRepository = mysqlRepository;
+//export const repository: IRepository = jsonRepository;
+export const repository: IRepository = mysqlRepository;
