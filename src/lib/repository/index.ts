@@ -66,8 +66,14 @@ export interface IRepository {
     deleteDeployment(id: string): Promise<void>;
 }
 
-// Para cambiar entre implementaciones, simplemente cambia el objeto que se exporta.
-// Por defecto, usa el repositorio JSON.
-// Para usar MySQL, cambia `jsonRepository` por `mysqlRepository`.
-//export const repository: IRepository = jsonRepository;
-export const repository: IRepository = mysqlRepository;
+const environment = process.env.ENVIRONMENT || 'local';
+
+let repository: IRepository;
+
+if (environment === 'production') {
+  repository = mysqlRepository;
+} else {
+  repository = jsonRepository;
+}
+
+export { repository };
