@@ -70,3 +70,13 @@ data/bdmysql.sql: Script SQL de inicialización (se ejecuta solo al crear el vol
 Dockerfile: Configuración de construcción multi-etapa (incluye copia de estáticos y OpenSSL).
 
 docker-compose.yml: Definición de servicios para Swarm.
+
+⚠️Ejecución en LOCAL
+npm install
+
+Poner en la variable de entorno de .env 
+ENVIRONMENT=local  
+
+En caso de Producción con BD de Mysql poner production
+
+npm run dev
