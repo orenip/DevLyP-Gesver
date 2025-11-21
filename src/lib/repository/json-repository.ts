@@ -85,6 +85,18 @@ export const jsonRepository: IRepository = {
             throw new Error('Failed to fetch deployment.');
         }
     },
+    async getLastDeployment(programaNombre: string, entorno: string): Promise<Despliegue | null> {
+        const data = await readDb();
+        const programa = data.programas.find(p => p.nombre === programaNombre);
+        if (!programa) {
+            return null;
+        }
+        const deployments = data.despliegues
+            .filter(d => d.programaId === programa.id && d.entorno === entorno)
+            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+        return deployments.length > 0 ? deployments[0] : null;
+    },
     async getPrograms(): Promise<Programa[]> {
         noStore();
         try {
@@ -171,7 +183,7 @@ export const jsonRepository: IRepository = {
         const plataformaId = await getOrCreate('plataformas', plataforma);
 
         const db = await readDb();
-        const plataformaNombre = db.plataformas.find(p => p.id === plataformaId)?.nombre || plataforma;
+        const plataformaNombre = db.plataformas?.find(p => p.id === plataformaId)?.nombre || plataforma;
 
         const newDeployment: Despliegue = {
             id: randomUUID(),
@@ -190,7 +202,7 @@ export const jsonRepository: IRepository = {
         const plataformaId = await getOrCreate('plataformas', plataforma);
         
         const db = await readDb();
-        const plataformaNombre = db.plataformas.find(p => p.id === plataformaId)?.nombre || plataforma;
+        const plataformaNombre = db.plataformas?.find(p => p.id === plataformaId)?.nombre || plataforma;
 
         const deploymentIndex = db.despliegues.findIndex(d => d.id === id);
         if (deploymentIndex === -1) {

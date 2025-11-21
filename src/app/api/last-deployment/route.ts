@@ -1,6 +1,5 @@
-
 import {NextRequest, NextResponse} from "next/server";
-import {getLastDeployment} from "@/lib/data";
+import {repository} from "@/lib/repository";
 
 export async function GET(req: NextRequest) {
     const {searchParams} = new URL(req.url);
@@ -11,7 +10,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({error: "Missing parameters"}, {status: 400});
     }
 
-    const lastDeployment = await getLastDeployment(programa, entorno);
+    const lastDeployment = await repository.getLastDeployment(programa, entorno as any);
 
     if (!lastDeployment) {
         return NextResponse.json({error: "Not found"}, {status: 404});

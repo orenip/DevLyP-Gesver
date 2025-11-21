@@ -1,7 +1,7 @@
 import 'server-only';
 import mysql, { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Programa, Responsable, Plataforma } from '.';
+import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Programa, Responsable, Plataforma, Despliegue } from '.';
 
 // --- CONFIGURACIÓN DE CONEXIÓN ---
 const connectionConfig = {
@@ -336,6 +336,48 @@ export const mysqlRepository: IRepository = {
         } catch (error) {
             console.error('Database Error (getDeploymentById):', error);
             throw new Error('Failed to fetch deployment.');
+        } finally {
+            db.release();
+        }
+    },
+    async getLastDeployment(programaNombre: string, entorno: string): Promise<Despliegue | null> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const sql = `
+                SELECT d.*, p.nombre as programaNombre, r.nombre as responsableNombre
+                FROM despliegues d
+                JOIN programas p ON d.programaId = p.id
+                JOIN responsables r ON d.responsableId = r.id
+                WHERE p.nombre = ? AND d.entorno = ?
+                ORDER BY d.fecha DESC
+                LIMIT 1
+            `;
+            const [rows] = await db.query<RowDataPacket[]>(sql, [programaNombre, entorno]);
+
+            if (rows.length === 0) {
+                return null;
+            }
+
+            const row = rows[0];
+            // Map RowDataPacket to Despliegue
+            return {
+                id: row.id.toString(),
+                fecha: new Date(row.fecha).toISOString(),
+                programaId: row.programaId.toString(),
+                entorno: row.entorno,
+                plataforma: row.plataforma,
+                version: row.version,
+                accion: row.accion,
+                responsableId: row.responsableId.toString(),
+                comentario: row.comentario,
+                hasSwagger: !!row.hasSwagger,
+                url: row.url,
+                port: row.port,
+            };
+        } catch (error) {
+            console.error('Database Error (getLastDeployment):', error);
+            throw new Error('Failed to fetch last deployment.');
         } finally {
             db.release();
         }

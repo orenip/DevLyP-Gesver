@@ -64,6 +64,7 @@ export interface IRepository {
     createDeployment(payload: CreateDeploymentPayload): Promise<void>;
     updateDeployment(id: string, payload: UpdateDeploymentPayload): Promise<void>;
     deleteDeployment(id: string): Promise<void>;
+    getLastDeployment(programaNombre: string, entorno: string): Promise<Despliegue | null>;
 }
 
 const environment = process.env.ENVIRONMENT || 'local';

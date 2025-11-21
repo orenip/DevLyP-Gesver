@@ -35,7 +35,7 @@ export interface DbData {
     despliegues: Despliegue[];
     programas: Programa[];
     responsables: Responsable[];
-    plataformas?: Plataforma[];
+    plataformas: Plataforma[];
 }
 
 const dbPath = path.join(process.cwd(), 'data', 'db.json');
