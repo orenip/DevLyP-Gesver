@@ -64,6 +64,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVersionPrefilled, setIsVersionPrefilled] = useState(false);
 
   const defaultValues: Partial<DeploymentFormValues> = deployment ? {
       ...deployment,
@@ -94,6 +95,9 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     defaultValues,
     mode: 'onChange',
   });
+  
+  const programa = form.watch("programa");
+  const entorno = form.watch("entorno");
 
   useEffect(() => {
     async function fetchData() {
@@ -119,6 +123,38 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     }
     fetchData();
   }, [toast]);
+  
+ useEffect(() => {
+    async function fetchLastDeployment() {
+      if (programa && entorno) {
+        try {
+          const response = await fetch(`/api/last-deployment?programa=${programa}&entorno=${entorno}`);
+          if (response.ok) {
+            const lastDeployment = await response.json();
+            form.setValue('version', lastDeployment.version);
+            form.setValue('url', lastDeployment.url);
+            form.setValue('port', lastDeployment.port);
+            form.setValue('hasSwagger', lastDeployment.hasSwagger);
+            setIsVersionPrefilled(true);
+          } else {
+            form.setValue('version', '');
+            form.setValue('url', '');
+            form.setValue('port', '');
+            form.setValue('hasSwagger', false);
+            setIsVersionPrefilled(false);
+          }
+        } catch (error) {
+          console.error("Failed to fetch last deployment", error);
+          setIsVersionPrefilled(false);
+        }
+      }
+    }
+
+    if (!deployment) {
+      fetchLastDeployment();
+    }
+  }, [programa, entorno, form, deployment]);
+
 
   const onSubmit = async (data: DeploymentFormValues) => {
     setIsSubmitting(true);
@@ -277,7 +313,16 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
                                 <FormItem className="space-y-2">
                                 <FormLabel>Versión</FormLabel>
                                 <FormControl>
-                                    <Input {...field} />
+                                     <Input
+                                        {...field}
+                                        className={cn({
+                                            'border-red-500 text-red-500': isVersionPrefilled,
+                                        })}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            setIsVersionPrefilled(false);
+                                        }}
+                                    />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
