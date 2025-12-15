@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    hostname: deployment-tracker-db
+    environment:
+      MYSQL_DATABASE: deployment_tracker
+      MYSQL_USER: arco
+      MYSQL_PASSWORD: "gYlrmd75M%7Px7"
+      MYSQL_ROOT_PASSWORD: "gZf%J6ilJtlAVb"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - red_principal
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+
+networks:
+  red_principal:
+    name: proxy_redarco_swarm
+    external: true
+
+volumes:
+  mysql-data:
+    external: true
+    name: despliegues_mysql-data
