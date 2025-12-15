@@ -298,9 +298,9 @@ export const mysqlRepository: IRepository = {
             if (queryStr) {
                 const searchPattern = `%${queryStr}%`;
                 conditions.push(`
-                    (p.nombre LIKE ? OR d.version LIKE ? OR r.nombre LIKE ? OR d.comentario LIKE ? OR d.accion LIKE ?)
+                    (p.nombre LIKE ? OR d.version LIKE ? OR r.nombre LIKE ? OR d.port LIKE ?)
                 `);
-                values.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+                values.push(searchPattern, searchPattern, searchPattern, searchPattern);
             }
 
             const WHERE_CLAUSE = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

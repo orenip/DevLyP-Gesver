@@ -43,7 +43,7 @@ const FormSchema = z.object({
   entorno: z.enum(['Preproducción', 'Producción']),
   plataforma: z.string().min(1, 'Plataforma no puede estar vacía.'),
   version: z.string().min(1, 'Versión no puede estar vacía.'),
-  accion: z.string().optional(),
+  accion: z.string().min(1, 'Acción no puede estar vacía.'),
   comentario: z.string().optional(),
   hasSwagger: z.boolean().default(false),
   url: z.string().optional(),
@@ -124,19 +124,30 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
     fetchData();
   }, [toast]);
   
- useEffect(() => {
+  useEffect(() => {
     async function fetchLastDeployment() {
       if (programa && entorno) {
+        setIsLoading(true); // Muestra el esqueleto mientras se cargan los datos
         try {
           const response = await fetch(`/api/last-deployment?programa=${programa}&entorno=${entorno}`);
           if (response.ok) {
             const lastDeployment = await response.json();
-            form.setValue('version', lastDeployment.version);
-            form.setValue('url', lastDeployment.url);
-            form.setValue('port', lastDeployment.port);
-            form.setValue('hasSwagger', lastDeployment.hasSwagger);
+            form.setValue('version', lastDeployment.version || '');
+            form.setValue('url', lastDeployment.url || '');
+            form.setValue('port', lastDeployment.port || '');
+            form.setValue('hasSwagger', lastDeployment.hasSwagger || false);
+            form.setValue('plataforma', lastDeployment.plataforma.nombre || '');
+            form.setValue('responsable', lastDeployment.responsable.nombre || '');
+            // No sobreescribir campos que el usuario pudo haber llenado
+            if (form.getValues('accion') === '') {
+              form.setValue('accion', '');
+            }
+            if (form.getValues('comentario') === '') {
+              form.setValue('comentario', '');
+            }
             setIsVersionPrefilled(true);
           } else {
+            // Si no hay despliegue anterior, limpiar campos relevantes
             form.setValue('version', '');
             form.setValue('url', '');
             form.setValue('port', '');
@@ -146,6 +157,8 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
         } catch (error) {
           console.error("Failed to fetch last deployment", error);
           setIsVersionPrefilled(false);
+        } finally {
+          setIsLoading(false);
         }
       }
     }

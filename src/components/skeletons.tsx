@@ -6,7 +6,7 @@ import {
 import { Skeleton } from './ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
-export function TableSkeleton() {
+export function DeploymentsTableSkeleton() {
     return (
         <div className="space-y-4">
             <div className="rounded-md border">
