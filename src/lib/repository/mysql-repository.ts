@@ -570,4 +570,233 @@ export const mysqlRepository: IRepository = {
             db.release();
         }
     },
+
+    async getProgramasConServicio(): Promise<ProgramaConServicio[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(
+                'SELECT id, nombre, servicioId FROM programas ORDER BY nombre ASC'
+            );
+            return rows.map(row => ({
+                id: row.id.toString(),
+                nombre: row.nombre,
+                servicioId: row.servicioId?.toString() || null,
+            }));
+        } catch (e) {
+            console.error('Database Error (getProgramasConServicio):', e);
+            throw new Error('Failed to fetch programas.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async getProgramasByServicio(servicioId: string): Promise<ProgramaConResumen[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const sql = `
+                WITH LatestPreprod AS (
+                    SELECT d.*, ROW_NUMBER() OVER (PARTITION BY d.programaId ORDER BY d.fecha DESC) AS rn
+                    FROM despliegues d WHERE d.entorno = 'Preproducción'
+                ),
+                LatestProd AS (
+                    SELECT d.*, ROW_NUMBER() OVER (PARTITION BY d.programaId ORDER BY d.fecha DESC) AS rn
+                    FROM despliegues d WHERE d.entorno = 'Producción'
+                )
+                SELECT
+                    p.id, p.nombre, p.servicioId,
+                    lpr.id AS preprodId, lpr.version AS preprodVersion, lpr.fecha AS preprodFecha,
+                    lpr.plataforma AS preprodPlataforma, lpr.accion AS preprodAccion,
+                    lpr.comentario AS preprodComentario, lpr.url AS preprodUrl,
+                    lpr.port AS preprodPort, lpr.hasSwagger AS preprodHasSwagger,
+                    rp.id AS preprodResponsableId, rp.nombre AS preprodResponsableNombre,
+                    lprd.id AS prodId, lprd.version AS prodVersion, lprd.fecha AS prodFecha,
+                    lprd.plataforma AS prodPlataforma, lprd.accion AS prodAccion,
+                    lprd.comentario AS prodComentario, lprd.url AS prodUrl,
+                    lprd.port AS prodPort, lprd.hasSwagger AS prodHasSwagger,
+                    rprd.id AS prodResponsableId, rprd.nombre AS prodResponsableNombre
+                FROM programas p
+                LEFT JOIN LatestPreprod lpr  ON lpr.programaId  = p.id AND lpr.rn  = 1
+                LEFT JOIN responsables  rp   ON lpr.responsableId = rp.id
+                LEFT JOIN LatestProd    lprd ON lprd.programaId = p.id AND lprd.rn = 1
+                LEFT JOIN responsables  rprd ON lprd.responsableId = rprd.id
+                WHERE p.servicioId = ?
+                ORDER BY p.nombre ASC
+            `;
+            const [rows] = await db.query<RowDataPacket[]>(sql, [servicioId]);
+            return rows.map(row => ({
+                id: row.id.toString(),
+                nombre: row.nombre,
+                servicioId: row.servicioId?.toString() || null,
+                ultimoPreprod: row.preprodId ? {
+                    id: row.preprodId.toString(),
+                    fecha: new Date(row.preprodFecha).toISOString(),
+                    entorno: 'Preproducción' as const,
+                    version: row.preprodVersion,
+                    plataforma: row.preprodPlataforma,
+                    accion: row.preprodAccion,
+                    comentario: row.preprodComentario,
+                    hasSwagger: Boolean(row.preprodHasSwagger),
+                    url: row.preprodUrl,
+                    port: row.preprodPort,
+                    programa: { id: row.id.toString(), nombre: row.nombre },
+                    responsable: { id: row.preprodResponsableId.toString(), nombre: row.preprodResponsableNombre },
+                } : null,
+                ultimoProd: row.prodId ? {
+                    id: row.prodId.toString(),
+                    fecha: new Date(row.prodFecha).toISOString(),
+                    entorno: 'Producción' as const,
+                    version: row.prodVersion,
+                    plataforma: row.prodPlataforma,
+                    accion: row.prodAccion,
+                    comentario: row.prodComentario,
+                    hasSwagger: Boolean(row.prodHasSwagger),
+                    url: row.prodUrl,
+                    port: row.prodPort,
+                    programa: { id: row.id.toString(), nombre: row.nombre },
+                    responsable: { id: row.prodResponsableId.toString(), nombre: row.prodResponsableNombre },
+                } : null,
+            }));
+        } catch (e) {
+            console.error('Database Error (getProgramasByServicio):', e);
+            throw new Error('Failed to fetch programas by servicio.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async getProgramasSinServicio(): Promise<ProgramaConServicio[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(
+                'SELECT id, nombre FROM programas WHERE servicioId IS NULL ORDER BY nombre ASC'
+            );
+            return rows.map(row => ({ id: row.id.toString(), nombre: row.nombre, servicioId: null }));
+        } catch (e) {
+            console.error('Database Error (getProgramasSinServicio):', e);
+            throw new Error('Failed to fetch orphan programas.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async updateProgramaServicio(programaId: string, servicioId: string | null): Promise<void> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.execute(
+                'UPDATE programas SET servicioId = ? WHERE id = ?',
+                [servicioId, programaId]
+            );
+        } catch (e) {
+            console.error('Database Error (updateProgramaServicio):', e);
+            throw new Error('Failed to update programa servicio.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async getStats(): Promise<StatsPayload> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [[totalsRow]] = await db.query<RowDataPacket[]>(`
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN entorno = 'Producción'    THEN 1 ELSE 0 END) AS totalProd,
+                    SUM(CASE WHEN entorno = 'Preproducción' THEN 1 ELSE 0 END) AS totalPreprod,
+                    MIN(fecha) AS primerDespliegue,
+                    MAX(fecha) AS ultimoDespliegue
+                FROM despliegues
+            `);
+
+            const [byResponsable] = await db.query<RowDataPacket[]>(`
+                SELECT r.nombre, COUNT(*) AS total,
+                    SUM(CASE WHEN d.entorno = 'Producción'    THEN 1 ELSE 0 END) AS prod,
+                    SUM(CASE WHEN d.entorno = 'Preproducción' THEN 1 ELSE 0 END) AS preprod
+                FROM despliegues d JOIN responsables r ON d.responsableId = r.id
+                GROUP BY r.id, r.nombre ORDER BY total DESC
+            `);
+
+            const [byPlataforma] = await db.query<RowDataPacket[]>(`
+                SELECT plataforma, COUNT(*) AS total FROM despliegues
+                GROUP BY plataforma ORDER BY total DESC
+            `);
+
+            const [byMonth] = await db.query<RowDataPacket[]>(`
+                SELECT DATE_FORMAT(fecha, '%Y-%m') AS mes,
+                    SUM(CASE WHEN entorno = 'Producción'    THEN 1 ELSE 0 END) AS prod,
+                    SUM(CASE WHEN entorno = 'Preproducción' THEN 1 ELSE 0 END) AS preprod
+                FROM despliegues WHERE fecha >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                GROUP BY mes ORDER BY mes ASC
+            `);
+
+            const [topProgramas] = await db.query<RowDataPacket[]>(`
+                SELECT p.nombre, COUNT(*) AS total FROM despliegues d
+                JOIN programas p ON d.programaId = p.id
+                GROUP BY p.id, p.nombre ORDER BY total DESC LIMIT 10
+            `);
+
+            const [[serviciosCount]] = await db.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM servicios');
+            const [[sinServicioCount]] = await db.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM programas WHERE servicioId IS NULL');
+
+            const [byServicio] = await db.query<RowDataPacket[]>(`
+                SELECT s.nombre AS servicio,
+                    COUNT(DISTINCT p.id) AS numProgramas,
+                    SUM(CASE WHEN d.entorno = 'Producción'    THEN 1 ELSE 0 END) AS prod,
+                    SUM(CASE WHEN d.entorno = 'Preproducción' THEN 1 ELSE 0 END) AS preprod,
+                    MAX(d.fecha) AS ultimoDespliegue,
+                    (SELECT r2.nombre FROM responsables r2
+                     JOIN despliegues d2 ON d2.responsableId = r2.id
+                     JOIN programas p2   ON d2.programaId = p2.id
+                     WHERE p2.servicioId = s.id
+                     GROUP BY r2.id ORDER BY COUNT(*) DESC LIMIT 1) AS topResponsable
+                FROM servicios s
+                LEFT JOIN programas   p ON p.servicioId = s.id
+                LEFT JOIN despliegues d ON d.programaId = p.id
+                GROUP BY s.id, s.nombre
+                ORDER BY (SUM(CASE WHEN d.entorno = 'Producción' THEN 1 ELSE 0 END) +
+                          SUM(CASE WHEN d.entorno = 'Preproducción' THEN 1 ELSE 0 END)) DESC
+            `);
+
+            const primerFecha = totalsRow.primerDespliegue ? new Date(totalsRow.primerDespliegue) : new Date();
+            const ahora = new Date();
+            const mesesTranscurridos = Math.max(1,
+                (ahora.getFullYear() - primerFecha.getFullYear()) * 12 +
+                (ahora.getMonth() - primerFecha.getMonth())
+            );
+
+            return {
+                totales: {
+                    total: Number(totalsRow.total),
+                    prod: Number(totalsRow.totalProd),
+                    preprod: Number(totalsRow.totalPreprod),
+                    primerDespliegue: totalsRow.primerDespliegue ? new Date(totalsRow.primerDespliegue).toISOString() : null,
+                    ultimoDespliegue: totalsRow.ultimoDespliegue ? new Date(totalsRow.ultimoDespliegue).toISOString() : null,
+                    promedioMensual: Number((Number(totalsRow.total) / mesesTranscurridos).toFixed(1)),
+                    serviciosActivos: Number(serviciosCount.total),
+                    programasSinServicio: Number(sinServicioCount.total),
+                },
+                porResponsable: byResponsable.map(r => ({ nombre: r.nombre, total: Number(r.total), prod: Number(r.prod), preprod: Number(r.preprod) })),
+                porPlataforma: byPlataforma.map(p => ({ plataforma: p.plataforma, total: Number(p.total) })),
+                porMes: byMonth.map(m => ({ mes: m.mes, prod: Number(m.prod), preprod: Number(m.preprod) })),
+                topProgramas: topProgramas.map(p => ({ nombre: p.nombre, total: Number(p.total) })),
+                porServicio: byServicio.map(s => ({
+                    servicio: s.servicio,
+                    numProgramas: Number(s.numProgramas),
+                    prod: Number(s.prod || 0),
+                    preprod: Number(s.preprod || 0),
+                    ultimoDespliegue: s.ultimoDespliegue ? new Date(s.ultimoDespliegue).toISOString() : null,
+                    topResponsable: s.topResponsable || null,
+                })),
+            };
+        } catch (e) {
+            console.error('Database Error (getStats):', e);
+            throw new Error('Failed to fetch stats.');
+        } finally {
+            db.release();
+        }
+    },
 };
