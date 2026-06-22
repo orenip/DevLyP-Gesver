@@ -5,7 +5,7 @@ export interface Programa {
     id: string;
     nombre: string;
 }
-  
+
 export interface Responsable {
     id: string;
     nombre: string;
@@ -15,7 +15,83 @@ export interface Plataforma {
     id: string;
     nombre: string;
 }
-  
+
+export interface Servicio {
+    id: string;
+    nombre: string;
+    descripcion: string | null;
+    color: string | null;
+}
+
+export interface ServicioWithStats extends Servicio {
+    numProgramas: number;
+    numDespliegues: number;
+    ultimoDespliegue: string | null;
+    tienePreproduccion: boolean;
+    tieneProduccion: boolean;
+}
+
+export interface ProgramaConServicio extends Programa {
+    servicioId: string | null;
+}
+
+export interface ProgramaConResumen extends ProgramaConServicio {
+    ultimoPreprod: DeploymentWithRelations | null;
+    ultimoProd: DeploymentWithRelations | null;
+}
+
+export interface StatsTotales {
+    total: number;
+    prod: number;
+    preprod: number;
+    primerDespliegue: string | null;
+    ultimoDespliegue: string | null;
+    promedioMensual: number;
+    serviciosActivos: number;
+    programasSinServicio: number;
+}
+
+export interface StatsResponsable {
+    nombre: string;
+    total: number;
+    prod: number;
+    preprod: number;
+}
+
+export interface StatsMes {
+    mes: string;
+    prod: number;
+    preprod: number;
+}
+
+export interface StatsPlataforma {
+    plataforma: string;
+    total: number;
+}
+
+export interface StatsPrograma {
+    nombre: string;
+    total: number;
+}
+
+export interface StatsServicio {
+    servicio: string;
+    numProgramas: number;
+    prod: number;
+    preprod: number;
+    ultimoDespliegue: string | null;
+    topResponsable: string | null;
+}
+
+export interface StatsPayload {
+    totales: StatsTotales;
+    porResponsable: StatsResponsable[];
+    porPlataforma: StatsPlataforma[];
+    porMes: StatsMes[];
+    topProgramas: StatsPrograma[];
+    porServicio: StatsServicio[];
+}
+
 export interface DespliegueBase {
     entorno: 'Preproducción' | 'Producción';
     version: string;
@@ -26,7 +102,7 @@ export interface DespliegueBase {
     port?: string;
     fecha: string;
 }
-  
+
 export interface Despliegue extends DespliegueBase {
     id: string;
     programaId: string;
@@ -54,17 +130,35 @@ export type SummaryItem = {
     Producción: DeploymentWithRelations | null;
 }
 
+export type CreateServicioPayload = {
+    nombre: string;
+    descripcion?: string;
+    color?: string;
+};
+
+export type UpdateServicioPayload = CreateServicioPayload;
+
 export interface IRepository {
     getFilteredDeployments(query: string, entorno: string, programaId?: string, responsableId?: string): Promise<DeploymentWithRelations[]>;
     getDeploymentById(id: string): Promise<DeploymentWithRelations | null>;
-    getPrograms(): Promise<Programa[]>;
-    getResponsibles(): Promise<Responsable[]>;
-    getPlatforms(): Promise<Plataforma[]>;
-    getSummary(): Promise<SummaryItem[]>;
     createDeployment(payload: CreateDeploymentPayload): Promise<void>;
     updateDeployment(id: string, payload: UpdateDeploymentPayload): Promise<void>;
     deleteDeployment(id: string): Promise<void>;
     getLastDeployment(programaNombre: string, entorno: string): Promise<Despliegue | null>;
+    getPrograms(): Promise<Programa[]>;
+    getResponsibles(): Promise<Responsable[]>;
+    getPlatforms(): Promise<Plataforma[]>;
+    getSummary(): Promise<SummaryItem[]>;
+    getServicios(): Promise<ServicioWithStats[]>;
+    getServicioById(id: string): Promise<Servicio | null>;
+    createServicio(payload: CreateServicioPayload): Promise<void>;
+    updateServicio(id: string, payload: UpdateServicioPayload): Promise<void>;
+    deleteServicio(id: string): Promise<void>;
+    getProgramasConServicio(): Promise<ProgramaConServicio[]>;
+    getProgramasByServicio(servicioId: string): Promise<ProgramaConResumen[]>;
+    getProgramasSinServicio(): Promise<ProgramaConServicio[]>;
+    updateProgramaServicio(programaId: string, servicioId: string | null): Promise<void>;
+    getStats(): Promise<StatsPayload>;
 }
 
 const environment = process.env.ENVIRONMENT || 'local';
