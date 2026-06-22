@@ -1,7 +1,7 @@
 import 'server-only';
 import mysql, { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Programa, Responsable, Plataforma, Despliegue } from '.';
+import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Programa, Responsable, Plataforma, Despliegue, Servicio, ServicioWithStats, CreateServicioPayload, UpdateServicioPayload, ProgramaConServicio, ProgramaConResumen, StatsPayload } from '.';
 
 // --- CONFIGURACIÓN DE CONEXIÓN ---
 const connectionConfig = {
@@ -468,5 +468,106 @@ export const mysqlRepository: IRepository = {
         } finally {
             db.release();
         }
-    }
+    },
+
+    async getServicios(): Promise<ServicioWithStats[]> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const sql = `
+                SELECT
+                    s.id, s.nombre, s.descripcion, s.color,
+                    COUNT(DISTINCT p.id)  AS numProgramas,
+                    COUNT(DISTINCT d.id)  AS numDespliegues,
+                    MAX(d.fecha)          AS ultimoDespliegue,
+                    MAX(CASE WHEN d.entorno = 'Preproducción' THEN 1 ELSE 0 END) AS tienePreproduccion,
+                    MAX(CASE WHEN d.entorno = 'Producción'    THEN 1 ELSE 0 END) AS tieneProduccion
+                FROM servicios s
+                LEFT JOIN programas   p ON p.servicioId = s.id
+                LEFT JOIN despliegues d ON d.programaId = p.id
+                GROUP BY s.id
+                ORDER BY s.nombre ASC
+            `;
+            const [rows] = await db.query<RowDataPacket[]>(sql);
+            return rows.map(row => ({
+                id: row.id.toString(),
+                nombre: row.nombre,
+                descripcion: row.descripcion,
+                color: row.color,
+                numProgramas: Number(row.numProgramas),
+                numDespliegues: Number(row.numDespliegues),
+                ultimoDespliegue: row.ultimoDespliegue ? new Date(row.ultimoDespliegue).toISOString() : null,
+                tienePreproduccion: Boolean(Number(row.tienePreproduccion)),
+                tieneProduccion: Boolean(Number(row.tieneProduccion)),
+            }));
+        } catch (e) {
+            console.error('Database Error (getServicios):', e);
+            throw new Error('Failed to fetch servicios.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async getServicioById(id: string): Promise<Servicio | null> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            const [rows] = await db.query<RowDataPacket[]>(
+                'SELECT id, nombre, descripcion, color FROM servicios WHERE id = ?', [id]
+            );
+            if (rows.length === 0) return null;
+            const row = rows[0];
+            return { id: row.id.toString(), nombre: row.nombre, descripcion: row.descripcion, color: row.color };
+        } catch (e) {
+            console.error('Database Error (getServicioById):', e);
+            throw new Error('Failed to fetch servicio.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async createServicio(payload: CreateServicioPayload): Promise<void> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.execute(
+                'INSERT INTO servicios (nombre, descripcion, color) VALUES (?, ?, ?)',
+                [payload.nombre, payload.descripcion || null, payload.color || null]
+            );
+        } catch (e) {
+            console.error('Database Error (createServicio):', e);
+            throw new Error('Failed to create servicio.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async updateServicio(id: string, payload: UpdateServicioPayload): Promise<void> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.execute(
+                'UPDATE servicios SET nombre = ?, descripcion = ?, color = ? WHERE id = ?',
+                [payload.nombre, payload.descripcion || null, payload.color || null, id]
+            );
+        } catch (e) {
+            console.error('Database Error (updateServicio):', e);
+            throw new Error('Failed to update servicio.');
+        } finally {
+            db.release();
+        }
+    },
+
+    async deleteServicio(id: string): Promise<void> {
+        noStore();
+        const db = await getDbConnection();
+        try {
+            await db.execute('DELETE FROM servicios WHERE id = ?', [id]);
+        } catch (e) {
+            console.error('Database Error (deleteServicio):', e);
+            throw new Error('Failed to delete servicio.');
+        } finally {
+            db.release();
+        }
+    },
 };
