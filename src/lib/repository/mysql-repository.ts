@@ -9,17 +9,48 @@ const connectionConfig = {
     user: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
-    socket: '/var/run/mysqld/mysqld.sock',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
 };
 
 // Usamos un Pool para mejor rendimiento y manejo de conexiones
 const pool = mysql.createPool(connectionConfig);
 
-async function getDbConnection() {
-    return pool.getConnection();
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1500;
+
+async function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Obtiene una conexión del pool validándola con ping.
+ * Reintenta hasta MAX_RETRIES veces con backoff incremental.
+ * Resuelve conexiones muertas (MySQL reiniciado, timeout de idle).
+ */
+async function getDbConnection(): Promise<PoolConnection> {
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        let conn: PoolConnection | undefined;
+        try {
+            conn = await pool.getConnection();
+            await conn.ping(); // Verifica que la conexión esté viva
+            return conn;
+        } catch (err) {
+            if (conn) conn.release();
+            if (attempt === MAX_RETRIES) {
+                console.error(`DB: falló tras ${MAX_RETRIES} intentos.`, err);
+                throw err;
+            }
+            const delay = RETRY_BASE_DELAY_MS * attempt;
+            console.warn(`DB: intento ${attempt} fallido. Reintentando en ${delay}ms...`);
+            await sleep(delay);
+        }
+    }
+    throw new Error('No se pudo obtener conexión a la base de datos.');
 }
 
 // --- FUNCIONES DE SOPORTE ---
