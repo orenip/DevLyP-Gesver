@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Package, PanelLeft, Wifi } from 'lucide-react';
+import { Home, Package, PanelLeft, Wifi, LayoutGrid, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -18,9 +18,11 @@ import { Loader2 } from 'lucide-react';
 
 
 const navLinks = [
-  { href: '/', icon: Home, label: 'Resumen' },
-  { href: '/deployments', icon: Package, label: 'Despliegues' },
-  { href: '/ports', icon: Wifi, label: 'Puertos' },
+  { href: '/',             icon: Home,       label: 'Inicio' },
+  { href: '/servicios',    icon: LayoutGrid, label: 'Servicios' },
+  { href: '/deployments',  icon: Package,    label: 'Despliegues' },
+  { href: '/estadisticas', icon: BarChart3,  label: 'Estadísticas' },
+  { href: '/ports',        icon: Wifi,       label: 'Puertos' },
 ];
 
 export default function MainLayout({
@@ -58,7 +60,7 @@ export default function MainLayout({
                   <Link
                     href={href}
                     className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                      pathname === href
+                      pathname === href || (href !== '/' && pathname.startsWith(href))
                         ? 'bg-accent text-accent-foreground'
                         : 'text-muted-foreground'
                     } transition-colors hover:text-foreground md:h-8 md:w-8`}
@@ -102,7 +104,9 @@ export default function MainLayout({
                     }}
                     className={cn(
                         'flex items-center gap-4 px-2.5',
-                        pathname === href ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                        (pathname === href || (href !== '/' && pathname.startsWith(href)))
+                          ? 'text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     <Icon className="h-5 w-5" />
