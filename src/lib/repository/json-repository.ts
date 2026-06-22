@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { randomUUID } from 'crypto';
 import { readDb, writeDb, Despliegue, Programa, Responsable, Plataforma } from '../data';
-import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload } from '.';
+import type { IRepository, DeploymentWithRelations, SummaryItem, CreateDeploymentPayload, UpdateDeploymentPayload, Servicio, ServicioWithStats, CreateServicioPayload, UpdateServicioPayload, ProgramaConServicio, ProgramaConResumen, StatsPayload } from '.';
 
 const fetchWithRelations = (despliegues: Despliegue[], programas: Programa[], responsables: Responsable[]): DeploymentWithRelations[] => {
     const programasMap = new Map(programas.map(p => [p.id, p]));
@@ -222,5 +222,44 @@ export const jsonRepository: IRepository = {
         const db = await readDb();
         db.despliegues = db.despliegues.filter(d => d.id !== id);
         await writeDb(db);
-    }
+    },
+    async getServicios(): Promise<ServicioWithStats[]> {
+        return [];
+    },
+    async getServicioById(_id: string): Promise<Servicio | null> {
+        return null;
+    },
+    async createServicio(_payload: CreateServicioPayload): Promise<void> {
+        console.warn('createServicio: not implemented in JSON repository');
+    },
+    async updateServicio(_id: string, _payload: UpdateServicioPayload): Promise<void> {
+        console.warn('updateServicio: not implemented in JSON repository');
+    },
+    async deleteServicio(_id: string): Promise<void> {
+        console.warn('deleteServicio: not implemented in JSON repository');
+    },
+    async getProgramasConServicio(): Promise<ProgramaConServicio[]> {
+        const db = await readDb();
+        return db.programas.map(p => ({ id: p.id, nombre: p.nombre, servicioId: null }));
+    },
+    async getProgramasByServicio(_servicioId: string): Promise<ProgramaConResumen[]> {
+        return [];
+    },
+    async getProgramasSinServicio(): Promise<ProgramaConServicio[]> {
+        const db = await readDb();
+        return db.programas.map(p => ({ id: p.id, nombre: p.nombre, servicioId: null }));
+    },
+    async updateProgramaServicio(_programaId: string, _servicioId: string | null): Promise<void> {
+        console.warn('updateProgramaServicio: not implemented in JSON repository');
+    },
+    async getStats(): Promise<StatsPayload> {
+        return {
+            totales: { total: 0, prod: 0, preprod: 0, primerDespliegue: null, ultimoDespliegue: null, promedioMensual: 0, serviciosActivos: 0, programasSinServicio: 0 },
+            porResponsable: [],
+            porPlataforma: [],
+            porMes: [],
+            topProgramas: [],
+            porServicio: [],
+        };
+    },
 };
