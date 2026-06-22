@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
-import { DeploymentWithRelations } from '@/lib/data';
+import type { DeploymentWithRelations } from '@/lib/repository';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';

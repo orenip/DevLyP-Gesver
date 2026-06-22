@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DeleteDialog } from './delete-dialog';
-import { DeploymentWithRelations } from '@/lib/data';
+import type { DeploymentWithRelations } from '@/lib/repository';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
 
