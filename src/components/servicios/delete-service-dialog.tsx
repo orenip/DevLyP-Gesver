@@ -20,6 +20,7 @@ export function DeleteServiceDialog({ id, nombre, numProgramas }: DeleteServiceD
     async function handleDelete() {
         setIsPending(true);
         await deleteServicio(id);
+        router.push('/servicios');
         router.refresh();
         setIsPending(false);
     }

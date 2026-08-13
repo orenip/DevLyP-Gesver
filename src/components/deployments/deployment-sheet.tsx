@@ -21,7 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CalendarIcon, ChevronLeft, Loader2 } from 'lucide-react';
+import { AlertTriangle, CalendarIcon, ChevronLeft, Loader2, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CreatableCombobox } from '../ui/creatable-combobox';
@@ -65,6 +66,7 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVersionPrefilled, setIsVersionPrefilled] = useState(false);
+  const [editWarningDismissed, setEditWarningDismissed] = useState(false);
 
   const defaultValues: Partial<DeploymentFormValues> = deployment ? {
       ...deployment,
@@ -210,6 +212,51 @@ export function DeploymentForm({ deployment }: DeploymentSheetProps) {
 
   if (isLoading) {
     return <DeploymentFormSkeleton title={title} />;
+  }
+
+  // Show warning when editing an existing deployment
+  if (deployment && !editWarningDismissed) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <AlertTriangle className="h-7 w-7 text-amber-600" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold">¿Estás registrando una nueva versión?</h2>
+              <p className="text-muted-foreground text-sm max-w-md">
+                Si vas a documentar el despliegue de una <strong>nueva versión</strong> de este programa,
+                crea un nuevo despliegue en lugar de editar este registro existente.
+              </p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 max-w-md">
+              <strong>Importante:</strong> Editar un despliegue ya registrado modifica el historial
+              y dificulta el seguimiento de versiones.
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-sm">
+              <Button variant="outline" className="flex-1" onClick={() => setEditWarningDismissed(true)}>
+                Editar de todos modos
+              </Button>
+              <Button asChild className="flex-1 gap-2">
+                <Link href="/deployments/new">
+                  <PlusCircle className="h-4 w-4" />
+                  Nuevo despliegue
+                </Link>
+              </Button>
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => router.back()}
+            >
+              ← Volver
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

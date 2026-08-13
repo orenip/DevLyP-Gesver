@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Pencil } from 'lucide-react';
 import { ProgramCard } from '@/components/servicios/program-card';
 import { AsociacionesModal } from '@/components/servicios/asociaciones-modal';
+import { DeleteServiceDialog } from '@/components/servicios/delete-service-dialog';
 
 export default async function ServicioDetailPage({ params }: { params: { id: string } }) {
     const [servicio, programas, todosLosProgramas] = await Promise.all([
@@ -33,6 +34,7 @@ export default async function ServicioDetailPage({ params }: { params: { id: str
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/servicios/${params.id}/editar`}><Pencil className="mr-2 h-4 w-4" />Editar</Link>
                     </Button>
+                    <DeleteServiceDialog id={params.id} nombre={servicio.nombre} numProgramas={programas.length} />
                 </div>
             </div>
 

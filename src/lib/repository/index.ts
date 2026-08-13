@@ -83,6 +83,24 @@ export interface StatsServicio {
     topResponsable: string | null;
 }
 
+export interface StatsTopMesActual {
+    nombre: string;
+    total: number;
+    prod: number;
+    preprod: number;
+}
+
+export interface StatsRecordMes {
+    mes: string;
+    total: number;
+}
+
+export interface StatsPorResponsableMes {
+    responsable: string;
+    mes: string;
+    total: number;
+}
+
 export interface StatsPayload {
     totales: StatsTotales;
     porResponsable: StatsResponsable[];
@@ -90,6 +108,9 @@ export interface StatsPayload {
     porMes: StatsMes[];
     topProgramas: StatsPrograma[];
     porServicio: StatsServicio[];
+    topMesActual: StatsTopMesActual[];
+    recordMes: StatsRecordMes | null;
+    porResponsableMes: StatsPorResponsableMes[];
 }
 
 export interface DespliegueBase {

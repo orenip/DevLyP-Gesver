@@ -742,6 +742,31 @@ export const mysqlRepository: IRepository = {
             const [[serviciosCount]] = await db.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM servicios');
             const [[sinServicioCount]] = await db.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM programas WHERE servicioId IS NULL');
 
+            const [topMesActual] = await db.query<RowDataPacket[]>(`
+                SELECT r.nombre, COUNT(*) AS total,
+                    SUM(CASE WHEN d.entorno = 'Producción'    THEN 1 ELSE 0 END) AS prod,
+                    SUM(CASE WHEN d.entorno = 'Preproducción' THEN 1 ELSE 0 END) AS preprod
+                FROM despliegues d JOIN responsables r ON d.responsableId = r.id
+                WHERE DATE_FORMAT(d.fecha, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+                GROUP BY r.id, r.nombre ORDER BY total DESC
+            `);
+
+            const [[recordMesRow]] = await db.query<RowDataPacket[]>(`
+                SELECT DATE_FORMAT(fecha, '%Y-%m') AS mes, COUNT(*) AS total
+                FROM despliegues
+                GROUP BY mes
+                ORDER BY total DESC
+                LIMIT 1
+            `);
+
+            const [porResponsableMes] = await db.query<RowDataPacket[]>(`
+                SELECT r.nombre AS responsable, DATE_FORMAT(d.fecha, '%Y-%m') AS mes, COUNT(*) AS total
+                FROM despliegues d JOIN responsables r ON d.responsableId = r.id
+                WHERE d.fecha >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                GROUP BY r.id, r.nombre, mes
+                ORDER BY mes ASC, total DESC
+            `);
+
             const [byServicio] = await db.query<RowDataPacket[]>(`
                 SELECT s.nombre AS servicio,
                     COUNT(DISTINCT p.id) AS numProgramas,
@@ -790,6 +815,18 @@ export const mysqlRepository: IRepository = {
                     preprod: Number(s.preprod || 0),
                     ultimoDespliegue: s.ultimoDespliegue ? new Date(s.ultimoDespliegue).toISOString() : null,
                     topResponsable: s.topResponsable || null,
+                })),
+                topMesActual: topMesActual.map(r => ({
+                    nombre: r.nombre,
+                    total: Number(r.total),
+                    prod: Number(r.prod),
+                    preprod: Number(r.preprod),
+                })),
+                recordMes: recordMesRow ? { mes: recordMesRow.mes, total: Number(recordMesRow.total) } : null,
+                porResponsableMes: porResponsableMes.map(r => ({
+                    responsable: r.responsable,
+                    mes: r.mes,
+                    total: Number(r.total),
                 })),
             };
         } catch (e) {

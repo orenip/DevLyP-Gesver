@@ -260,6 +260,9 @@ export const jsonRepository: IRepository = {
             porMes: [],
             topProgramas: [],
             porServicio: [],
+            topMesActual: [],
+            recordMes: null,
+            porResponsableMes: [],
         };
     },
 };
