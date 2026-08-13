@@ -22,9 +22,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# --- CORRECCIÓN AQUÍ ---
-# Comenta o borra esta línea porque NO tienes carpeta public
-# COPY --from=builder /app/public ./public
+# Copia archivos estáticos públicos (logos, imágenes, favicon)
+COPY --from=builder /app/public ./public
 
 # 2. Copia la lógica del servidor
 COPY --from=builder /app/.next/standalone ./
